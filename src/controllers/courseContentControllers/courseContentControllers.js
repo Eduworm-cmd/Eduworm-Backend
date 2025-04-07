@@ -4,6 +4,7 @@ const {
   Video,
   Game,
 } = require("../../../models/CourseContent/courseContentSchema");
+const sendResponse = require("../../../utils/sendResponse");
 
 class courseContentControllers {
   async createCourseContent(req, res) {

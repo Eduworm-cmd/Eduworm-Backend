@@ -2,16 +2,21 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
+const morgan = require("morgan");
 const { mongoose_connection } = require("./DB/mongoose_connection");
 const courseContentRouter = require("./src/routes/courseContentRoutes");
+const ClassRouter = require("./src/routes/classRoutes");
 
 
 
+app.use(morgan('dev'));
 dotenv.config({
   path:`.env.${process.env.NODE_ENV || "development"}`
 });
 app.use(express.json());
-mongoose_connection(); //connecting to database
+app.use(express.urlencoded({ extended: true }));
+
+mongoose_connection(); 
 app.use(cors(
     {
         origin:"http://localhost:5173",
@@ -22,6 +27,7 @@ app.use(cors(
 
 
 app.use("/api/courseContent", courseContentRouter);
+app.use("/api/classes",ClassRouter);
 
 
 
