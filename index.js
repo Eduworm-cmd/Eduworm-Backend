@@ -3,7 +3,9 @@ const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { mongoose_connection } = require("./DB/mongoose_connection");
-const courseContentRouter = require("./src/routes/courseContentRoutes");
+const courseContentRouter = require("./src/routes/courseContentroutes/courseContentRoutes");
+const userRouter = require("./src/routes/userRoutes/userRoute");
+const authRouter = require("./src/routes/authRoutes/authRoutes");
 
 
 
@@ -22,6 +24,8 @@ app.use(cors(
 
 
 app.use("/api/courseContent", courseContentRouter);
+app.use("/api/user", userRouter);
+app.use("/api/courseContent", authRouter);
 
 
 
