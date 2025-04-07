@@ -4,8 +4,14 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
 const { mongoose_connection } = require("./DB/mongoose_connection");
+<<<<<<< HEAD
 const courseContentRouter = require("./src/routes/courseContentRoutes");
 const ClassRouter = require("./src/routes/classRoutes");
+=======
+const courseContentRouter = require("./src/routes/courseContentroutes/courseContentRoutes");
+const userRouter = require("./src/routes/userRoutes/userRoute");
+const authRouter = require("./src/routes/authRoutes/authRoutes");
+>>>>>>> 30152f9b4477b7098d79cbf5ddcc8f5989cd9257
 
 
 
@@ -27,7 +33,12 @@ app.use(cors(
 
 
 app.use("/api/courseContent", courseContentRouter);
+<<<<<<< HEAD
 app.use("/api/classes",ClassRouter);
+=======
+app.use("/api/user", userRouter);
+app.use("/api/courseContent", authRouter);
+>>>>>>> 30152f9b4477b7098d79cbf5ddcc8f5989cd9257
 
 
 
