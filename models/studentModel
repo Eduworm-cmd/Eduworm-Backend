@@ -1,0 +1,56 @@
+const mongoose = require("mongoose");
+
+// Define the parent schema as a sub-document
+const parentSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  relationship: { type: String, required: true },
+  phoneNumber: { type: String, required: true },
+  email: { type: String },
+  currentAddress: { type: String },
+  photo: { type: String } // URL of the uploaded image from Cloudinary
+});
+
+// Define the student schema
+const studentSchema = new mongoose.Schema({
+  // Student Personal Information
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  dateOfBirth: { type: Date, required: true },
+  gender: { type: String, required: true, enum: ["Male", "Female", "Other"] },
+  
+  // School Information
+  school: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
+  rollNo: { type: String },
+  admissionNumber: { type: String },
+  dateOfJoining: { type: Date },
+  bloodGroup: { type: String },
+  enrollmentStatus: { type: String },
+  uniqueId: { type: String },
+  photo: { type: String }, // URL of the uploaded image from Cloudinary
+  
+  // Current Class Information
+  currentClass: {
+    academicYear: { type: String, required: true }, // e.g., "AY 2024-2025"
+    grade: { type: String, required: true }, // e.g., "KG-2"
+    section: { type: String } // e.g., "MG-2"
+  },
+  
+  // Family Information
+  parents: [parentSchema],
+  
+  // Branch reference
+  branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
+  
+  // Account status
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
+
+// Create index for faster queries
+studentSchema.index({ firstName: 1, lastName: 1 });
+studentSchema.index({ rollNo: 1 });
+studentSchema.index({ admissionNumber: 1 });
+studentSchema.index({ branch: 1 });
+studentSchema.index({ isActive: 1 });
+
+module.exports = mongoose.model("Student", studentSchema);
