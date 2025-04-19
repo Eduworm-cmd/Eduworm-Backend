@@ -1,13 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const branchController = require("../controllers/branchController");
-const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/authMiddleware");
 
 // Apply authMiddleware to all branch routes
-router.post("/", authMiddleware, branchController.createBranch);
-router.get("/", authMiddleware, branchController.getBranches);
-router.put("/:id", authMiddleware, branchController.updateBranch);
-router.delete("/:id", authMiddleware, branchController.deleteBranch);
-router.put('/toggle-status/:id', branchController.toggleBranchStatus);
+router.post("/", roleMiddleware(["superadmin", "schooladmin"]), branchController.createBranch);
+router.get("/", roleMiddleware(["superadmin", "schooladmin"]), branchController.getBranches);
+router.put('/assign-schooladmin', roleMiddleware(["superadmin"]), branchController.assignSchoolAdminToBranch);
+router.put("/:id", roleMiddleware(["superadmin", "schooladmin"]), branchController.updateBranch);
+router.delete("/:id", roleMiddleware(["superadmin", "schooladmin"]), branchController.deleteBranch);
+router.put('/toggle-status/:id', roleMiddleware(["superadmin", "schooladmin"]), branchController.toggleBranchStatus);
 
 module.exports = router;

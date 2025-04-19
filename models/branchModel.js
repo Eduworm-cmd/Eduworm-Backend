@@ -13,8 +13,10 @@ const branchSchema = new mongoose.Schema({
     pinCode: { type: String, required: true },
     address: { type: String, required: true },
     branchLogo: { type: String },
-    schoolAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolAdmin", required: true }, // Reference to School Admin
-students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
+    schoolAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolAdmin" }, // Reference to School Admin
+    students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
+    staff: [{ type: mongoose.Schema.Types.ObjectId, ref: "Staff" }],
+    academicYear: [{ type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" }],
 }, { timestamps: true });
 
 module.exports = mongoose.model("Branch", branchSchema);

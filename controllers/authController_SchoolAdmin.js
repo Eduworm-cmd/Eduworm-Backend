@@ -94,11 +94,83 @@ const loginUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+const loginWithEmailPassword = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
+    const user = await Auth.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = generateToken(user._id, user.role);
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Register by SuperAdmin
+const createSchoolAdminBySuperAdmin = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      phoneNumber,
+      schoolName,
+      city,
+      state,
+      branches
+    } = req.body;
+
+    const existingUser = await Auth.findOne({ $or: [{ email }, { phoneNumber }] });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email or phone number already exists" });
+    }
+
+    const newUser = await Auth.create({
+      firstName,
+      lastName,
+      email,
+      password,
+      phoneNumber,
+      schoolName,
+      city,
+      state,
+      branches,
+      isVerified: true // since created by SuperAdmin
+    });
+
+    res.status(201).json({
+      message: "SchoolAdmin registered successfully",
+      userId: newUser._id
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 
 module.exports = {
   registerUser,
   verifyOtp,
   loginUser,
+  loginWithEmailPassword,
+  createSchoolAdminBySuperAdmin
 };
