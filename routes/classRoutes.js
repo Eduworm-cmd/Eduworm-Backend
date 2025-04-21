@@ -1,0 +1,24 @@
+const express = require('express');
+const router = express.Router();
+const classController = require('../controllers/classController');
+const roleMiddleware = require('../middleware/authMiddleware');
+
+router.use(roleMiddleware(['superadmin', 'schooladmin']));
+router.get('/', classController.getAllClasses);
+
+
+router.get('/:id', classController.getClassById);
+
+
+router.post('/', classController.createClass);
+
+
+router.put('/:id', classController.updateClass);
+
+
+router.delete('/:id', classController.deleteClass);
+
+
+router.patch('/:id/toggle-status', classController.toggleClassStatus);
+
+module.exports = router;
