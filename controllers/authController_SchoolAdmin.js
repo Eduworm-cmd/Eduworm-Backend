@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Auth = require("../models/authModel_SchoolAdmin");
+const cloudinary = require("../config/cloudinary");
 
 const generateToken = (userId, role) => {
   return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
@@ -128,20 +129,25 @@ const loginWithEmailPassword = async (req, res) => {
 const createSchoolAdminBySuperAdmin = async (req, res) => {
   try {
     const {
-      firstName,
-      lastName,
-      email,
-      password,
-      phoneNumber,
-      schoolName,
-      city,
-      state,
-      branches
+      firstName, lastName, email, password,
+      phoneNumber, schoolName, city, state, branches
     } = req.body;
 
     const existingUser = await Auth.findOne({ $or: [{ email }, { phoneNumber }] });
     if (existingUser) {
       return res.status(400).json({ message: "Email or phone number already exists" });
+    }
+
+    // Upload to Cloudinary if file exists
+    let schoolLogoUrl = "";
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "school_logos"
+      });
+      schoolLogoUrl = result.secure_url;
+
+      // Optional: delete local file after upload
+      fs.unlinkSync(req.file.path);
     }
 
     const newUser = await Auth.create({
@@ -154,7 +160,8 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       city,
       state,
       branches,
-      isVerified: true // since created by SuperAdmin
+      isVerified: true,
+      schoolLogo: schoolLogoUrl // 👈 saved in DB
     });
 
     res.status(201).json({
