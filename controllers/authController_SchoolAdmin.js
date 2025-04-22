@@ -130,7 +130,8 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
   try {
     const {
       firstName, lastName, email, password,
-      phoneNumber, schoolName, city, state, branches
+      phoneNumber, schoolName, city, state, branches,
+      schoolLogoBuffer // 👈 this is base64 string from client
     } = req.body;
 
     const existingUser = await Auth.findOne({ $or: [{ email }, { phoneNumber }] });
@@ -138,16 +139,14 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       return res.status(400).json({ message: "Email or phone number already exists" });
     }
 
-    // Upload to Cloudinary if file exists
     let schoolLogoUrl = "";
-    if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "school_logos"
-      });
-      schoolLogoUrl = result.secure_url;
-
-      // Optional: delete local file after upload
-      fs.unlinkSync(req.file.path);
+    if (schoolLogoBuffer) {
+      // Upload base64 buffer to Cloudinary
+      const uploadResponse = await cloudinary.uploader.upload(
+        `data:image/png;base64,${schoolLogoBuffer}`, // can change to image/jpeg if needed
+        { folder: "school_logos" }
+      );
+      schoolLogoUrl = uploadResponse.secure_url;
     }
 
     const newUser = await Auth.create({
@@ -161,7 +160,7 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       state,
       branches,
       isVerified: true,
-      schoolLogo: schoolLogoUrl // 👈 saved in DB
+      schoolLogo: schoolLogoUrl
     });
 
     res.status(201).json({
@@ -172,6 +171,7 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 module.exports = {
