@@ -28,6 +28,7 @@ const authSchema = new mongoose.Schema(
     branchEmail: { type: String },
     schoolLogo: { type: String }, // Cloudinary URL
     branches: [{ type: mongoose.Schema.Types.ObjectId, ref: "Branch" }],
+    classes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],
     academicYear: [{ type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" }],
   },
   { timestamps: true }
