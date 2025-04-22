@@ -22,11 +22,11 @@ const authSchema = new mongoose.Schema(
     address: { type: String },
     startDate: { type: String },
     endDate: { type: String },
-    academicYearLabel: { type: String }, // renamed to avoid collision with ref
+    academicYearLabel: { type: String },
     branchName: { type: String },
     branchPhone: { type: String },
     branchEmail: { type: String },
-    schoolLogo: { type: String }, // Cloudinary URL
+    schoolLogo: { type: String },
     branches: [{ type: mongoose.Schema.Types.ObjectId, ref: "Branch" }],
     classes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],
     academicYear: [{ type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" }],

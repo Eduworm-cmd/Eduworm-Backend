@@ -13,7 +13,7 @@ const branchSchema = new mongoose.Schema({
     pinCode: { type: String, required: true },
     address: { type: String, required: true },
     branchLogo: { type: String },
-    schoolAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolAdmin" }, // Reference to School Admin
+    schoolAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "SchoolAdmin" }, 
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
     staff: [{ type: mongoose.Schema.Types.ObjectId, ref: "Staff" }],
     academicYear: [{ type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" }],
