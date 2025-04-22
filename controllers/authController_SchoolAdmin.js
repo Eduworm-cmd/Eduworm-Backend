@@ -135,18 +135,29 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       password,
       phoneNumber,
       schoolName,
-      city,
+      displayName,
+      phone,
+      country,
       state,
+      city,
+      pincode,
+      address,
+      startDate,
+      endDate,
+      academicYear,
+      branchName,
+      branchPhone,
+      branchEmail,
       branches,
-      classes, // ⬅️ Now accepting classes
-      schoolLogoBuffer // ⬅️ Base64 string from client
+      classes,
+      schoolLogoBuffer
     } = req.body;
 
     // Check if user already exists
-    const existingUser = await Auth.findOne({
-      $or: [{ email }, { phoneNumber }]
+    const existingUser = await Auth.findOne({ 
+      $or: [{ email }, { phoneNumber }] 
     });
-
+    
     if (existingUser) {
       return res
         .status(400)
@@ -171,12 +182,23 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       password,
       phoneNumber,
       schoolName,
-      city,
+      displayName,
+      phone,
+      country,
       state,
+      city,
+      pincode,
+      address,
+      startDate,
+      endDate,
+      academicYear,
+      branchName,
+      branchPhone,
+      branchEmail,
       branches,
-      classes, // ⬅️ Add classes to DB
+      classes,
       isVerified: true,
-      schoolLogo: schoolLogoUrl
+      schoolLogo: schoolLogoUrl || ""
     });
 
     res.status(201).json({
