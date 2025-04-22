@@ -12,15 +12,28 @@ const authSchema = new mongoose.Schema(
     isVerified: { type: Boolean, default: false },
     role: { type: String, enum: ["schooladmin"], default: "schooladmin" },
     schoolName: { type: String },
-    city: { type: String },
+    displayName: { type: String },
+    classes: { type: String },
+    phone: { type: String },
+    country: { type: String },
     state: { type: String },
+    city: { type: String },
+    pincode: { type: String },
+    address: { type: String },
+    startDate: { type: String },
+    endDate: { type: String },
+    academicYearLabel: { type: String }, // renamed to avoid collision with ref
+    branchName: { type: String },
+    branchPhone: { type: String },
+    branchEmail: { type: String },
+    schoolLogo: { type: String }, // Cloudinary URL
     branches: [{ type: mongoose.Schema.Types.ObjectId, ref: "Branch" }],
+    classes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],
     academicYear: [{ type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" }],
   },
   { timestamps: true }
 );
 
-// Hash password before save
 authSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);

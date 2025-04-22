@@ -8,6 +8,8 @@ const superAdminAuthRoutes = require("./routes/authRoutes_SuperAdmin");
 const branchRoutes = require("./routes/branchRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const StaffRoutes = require("./routes/authRoutes_Teacher");
+const gradeRoutes = require("./routes/gradeRoutes");
+const classRoutes = require("./routes/classRoutes");
 
 dotenv.config();
 
@@ -29,6 +31,8 @@ app.use("/api/superadmin-auth", superAdminAuthRoutes);
 app.use("/api/branches", branchRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/staff", StaffRoutes);
+app.use("/api/grade", gradeRoutes);
+app.use("/api/class", classRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
