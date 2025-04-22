@@ -3,7 +3,6 @@ const router = express.Router();
 const classController = require('../controllers/classController');
 const roleMiddleware = require('../middleware/authMiddleware');
 
-router.use(roleMiddleware(['superadmin', 'schooladmin']));
 router.get('/', classController.getAllClasses);
 
 

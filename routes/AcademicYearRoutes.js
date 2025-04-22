@@ -4,7 +4,6 @@ const academicYearController = require("../controllers/AcademicYearController");
 const roleMiddleware = require("../middleware/authMiddleware");
 
 // Apply authentication to all routes
-router.use(roleMiddleware(["superadmin", "schooladmin"]));
 
 // Main routes
 router.route("/")
