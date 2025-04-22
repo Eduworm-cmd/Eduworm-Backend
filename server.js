@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const morgan = require("morgan");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes_SchoolAdmin");
 const superAdminAuthRoutes = require("./routes/authRoutes_SuperAdmin");
@@ -11,7 +12,12 @@ const StaffRoutes = require("./routes/authRoutes_Teacher");
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+    origin:["http://localhost:5173","http://localhost:5174"],
+    methods:"*",
+    credentials:true,
+}));
 app.use(express.json());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));

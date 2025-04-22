@@ -119,7 +119,7 @@ const studentController = {
       }
       
       const student = await studentModel.findById(studentId)
-        .populate('school', 'name displayName') // Optional: populate related school/branch info
+        .populate('school', 'name displayName') 
         .exec();
       
       if (!student) {

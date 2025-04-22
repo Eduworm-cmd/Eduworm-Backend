@@ -17,7 +17,7 @@ const roleMiddleware = (allowedRoles) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-console.log(decoded,allowedRoles)
+      console.log(decoded, allowedRoles)
       if (!allowedRoles.includes(decoded.role)) {
         return res.status(403).json({ message: `Access denied for role: ${decoded.role}` });
       }
