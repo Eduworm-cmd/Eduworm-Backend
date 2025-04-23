@@ -17,7 +17,6 @@ router.post("/verify", verifyOtp);
 router.post("/login", loginUser);
 router.post(
   "/create-by-superadmin",
-  roleMiddleware(["superadmin"]),
   createSchoolAdminBySuperAdmin
 );
 router.post("/login-email", loginWithEmailPassword); // Email-password login

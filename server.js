@@ -10,17 +10,18 @@ const studentRoutes = require("./routes/studentRoutes");
 const StaffRoutes = require("./routes/authRoutes_Teacher");
 const gradeRoutes = require("./routes/gradeRoutes");
 const classRoutes = require("./routes/classRoutes");
+const academicRoutes = require("./routes/AcademicYearRoutes");
 
 dotenv.config();
 
 const app = express();
-
 app.use(cors({
-    origin:["http://localhost:5173","http://localhost:5174"],
-    methods:"*",
-    credentials:true,
+    origin: "http://localhost:5173",
+    credentials: true
 }));
-app.use(express.json());
+
+
+// Set JSON limits before any routes
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
@@ -33,6 +34,7 @@ app.use("/api/students", studentRoutes);
 app.use("/api/staff", StaffRoutes);
 app.use("/api/grade", gradeRoutes);
 app.use("/api/class", classRoutes);
+app.use("/api/academic", academicRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
