@@ -4,7 +4,7 @@ const studentController = require('../controllers/studentController');
 const roleMiddleware = require('../middleware/authMiddleware');
 
 // Apply authentication middleware to all routes
-router.use(roleMiddleware(["superadmin", "schooladmin"]));
+// router.use(roleMiddleware(["superadmin", "schooladmin"]));
 
 // Create a new student - now accepting base64 in request body
 router.post('/', studentController.createStudent);

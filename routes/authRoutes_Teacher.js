@@ -16,15 +16,15 @@ const roleMiddleware = require("../middleware/authMiddleware");
 
 router
     .route('/')
-    .get(roleMiddleware(["superadmin", "schooladmin"]), getAllStaff)
-    .post(roleMiddleware(["superadmin", "schooladmin"]), createStaff);
+    .get(getAllStaff)
+    .post(createStaff);
 router.put('/deactivate/:staffId', roleMiddleware(["superadmin", "admin"]), deactivateAccount);
 
 router
     .route('/:id')
-    .get(roleMiddleware(["superadmin", "schooladmin"]), getStaff)
-    .put(roleMiddleware(["superadmin", "schooladmin"]), updateStaff)
-    .delete(roleMiddleware(["superadmin", "schooladmin"]), deleteStaff);
+    .get(getStaff)
+    .put(updateStaff)
+    .delete(deleteStaff);
 
 router
     .route('/assign')

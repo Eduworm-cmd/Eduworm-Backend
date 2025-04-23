@@ -24,13 +24,11 @@ const gradeSchema = new mongoose.Schema({
   },
   school: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'School',
-    required: true
+    ref: 'SchoolAdmin',
   },
   level: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Level',
-    required: true
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

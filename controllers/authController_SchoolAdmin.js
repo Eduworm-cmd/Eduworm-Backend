@@ -211,12 +211,32 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
 };
 
 
+// SchoolAdminController.js
+const getAllSchools = async (req, res) => {
+  try {
+    const schools = await Auth.find({}, 'name schoolName'); // Just get name and _id
+    
+    res.status(200).json({
+      status: "success",
+      data: schools
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message
+    });
+  }
+};
+
+
+
 
 
 module.exports = {
   registerUser,
   verifyOtp,
   loginUser,
+  getAllSchools,
   loginWithEmailPassword,
   createSchoolAdminBySuperAdmin
 };

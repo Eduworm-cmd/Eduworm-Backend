@@ -198,4 +198,91 @@ exports.assignSchoolAdminToBranch = async (req, res) => {
         res.status(500).json({ message: "Error assigning SchoolAdmin to branch" });
     }
 };
+// BranchController.js
+exports.getBranches = async (req, res) => {
+    try {
+      const { schoolId } = req.query;
+      
+      // Filter branches by schoolId if provided
+      const filter = {};
+      if (schoolId) filter.schoolId = schoolId;
+      
+      const branches = await Branch.find(filter, 'name');
+      
+      res.status(200).json({
+        status: "success",
+        data: branches
+      });
+    } catch (error) {
+      res.status(400).json({
+        status: "fail",
+        message: error.message
+      });
+    }
+  };
+exports.getAllAcademicYears = async (req, res) => {
+  try {
+    const { schoolId, branchId } = req.query;
+        
+    const filter = {};
+    if (schoolId) filter.schoolId = schoolId;
+    if (branchId) filter.branchId = branchId;
+    
+    // Base query
+    const academicYears = await AcademicYear.find(filter);
+    
+    // Populate with branch names for UI display
+    const populatedAcademicYears = await Promise.all(
+      academicYears.map(async (year) => {
+        try {
+          const branch = await Branch.findById(year.branchId, 'name');
+          return {
+            ...year._doc,
+            branchName: branch ? branch.name : 'Unknown Branch'
+          };
+        } catch (err) {
+          console.error('Error getting branch name:', err);
+          return {
+            ...year._doc,
+            branchName: 'Unknown Branch'
+          };
+        }
+      })
+    );
+    
+    res.status(200).json({
+      status: "success",
+      results: populatedAcademicYears.length,
+      data: populatedAcademicYears
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "fail",
+      message: error.message
+    });
+  }
+};
 
+// BranchController.js
+exports.getBranchesforschool = async (req, res) => {
+    try {
+        console.log("haj")
+      const { schoolId } = req.query;
+      console.log(schoolId)
+      // Filter branches by schoolId if provided
+      const filter = {};
+      if (schoolId) filter.schoolId = schoolId;
+      
+      const branches = await Branch.find({schoolAdmin:schoolId}, 'name _id');
+      
+      res.status(200).json({
+        status: "success",
+        data: branches
+      });
+    } catch (error) {
+      res.status(400).json({
+        status: "fail",
+        message: error.message
+      });
+    }
+  };

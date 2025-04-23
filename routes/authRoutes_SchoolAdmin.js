@@ -6,13 +6,14 @@ const {
   verifyOtp,
   loginUser,
   createSchoolAdminBySuperAdmin,
-  loginWithEmailPassword
+  loginWithEmailPassword,
+  getAllSchools
 } = require("../controllers/authController_SchoolAdmin");
-const roleMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 router.post("/register", registerUser);
+router.get("/", getAllSchools);
 router.post("/verify", verifyOtp);
 router.post("/login", loginUser);
 router.post(
