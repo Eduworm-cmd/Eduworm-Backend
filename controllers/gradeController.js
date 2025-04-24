@@ -64,10 +64,7 @@ exports.getAllGrades = async (req, res) => {
 exports.getGrade = async (req, res) => {
   try {
     const grade = await Grade.findById(req.params.id)
-      .populate('school', 'name')
-      .populate('level', 'name')
-      .populate('createdBy', 'name role')
-      .populate('updatedBy', 'name role');
+      
 
     if (!grade) {
       return res.status(404).json({
@@ -77,12 +74,12 @@ exports.getGrade = async (req, res) => {
     }
 
     // Check if schooladmin has access to this grade
-    if (req.user.role === 'schooladmin' && grade.school._id.toString() !== req.user.schoolId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to access this grade'
-      });
-    }
+    // if (req.user.role === 'schooladmin' && grade.school._id.toString() !== req.user.schoolId.toString()) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'Not authorized to access this grade'
+    //   });
+    // }
 
     res.status(200).json({
       success: true,
