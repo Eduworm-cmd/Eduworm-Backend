@@ -9,49 +9,63 @@ const asyncHandler = require('express-async-handler');
 
 
 exports.createStaff = asyncHandler(async (req, res) => {
+
     const {
         firstName, lastName, dateOfBirth, phoneNumber, emailIDOfficial, gender,
-        employeeRole, school, branch, employeeId, title, emailIDPersonal,
+        employeeRole, school, branch, title, emailIDPersonal,
         bloodGroup, maritalStatus, marriageAnniversary, department, subDepartment,
         emergencyContact, nationality, religion, fatherName, bankDetails,
-        currentAddress, permanentAddress
+        currentAddress, permanentAddress, photoBase64, aadhaarCardBase64, panCardBase64
     } = req.body;
 
     // Extract user id and role from JWT token
-    const userId = req.user.id;
-    const userRole = req.user.role;
+    // const userId = req.user.id;
+    // const userRole = req.user.role;
 
-    // Handle file uploads
+    // Handle base64 file uploads
     let photoUrl = null;
     let aadhaarCardUrl = null;
     let panCardUrl = null;
 
-    if (req.files) {
-        // Upload photo if present
-        if (req.files.photo) {
-            const photoUpload = await cloudinary.uploader.upload(req.files.photo.tempFilePath, {
+    // Generate a unique employee ID (you can customize this logic)
+    const employeeId = `EMP${Date.now().toString().slice(-6)}`;
+
+    // Upload photo if present in base64 format
+    if (photoBase64) {
+        try {
+            const photoUpload = await cloudinary.uploader.upload(photoBase64, {
                 folder: 'toondemy-staff-photos',
                 allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
             });
             photoUrl = photoUpload.secure_url;
+        } catch (error) {
+            console.error("Error uploading photo:", error);
         }
+    }
 
-        // Upload Aadhaar card if present
-        if (req.files.aadhaarCard) {
-            const aadhaarUpload = await cloudinary.uploader.upload(req.files.aadhaarCard.tempFilePath, {
+    // Upload Aadhaar card if present in base64 format
+    if (aadhaarCardBase64) {
+        try {
+            const aadhaarUpload = await cloudinary.uploader.upload(aadhaarCardBase64, {
                 folder: 'toondemy-staff-documents',
                 allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf']
             });
             aadhaarCardUrl = aadhaarUpload.secure_url;
+        } catch (error) {
+            console.error("Error uploading Aadhaar card:", error);
         }
+    }
 
-        // Upload PAN card if present  
-        if (req.files.panCard) {
-            const panUpload = await cloudinary.uploader.upload(req.files.panCard.tempFilePath, {
+    // Upload PAN card if present in base64 format
+    if (panCardBase64) {
+        try {
+            const panUpload = await cloudinary.uploader.upload(panCardBase64, {
                 folder: 'toondemy-staff-documents',
                 allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf']
             });
             panCardUrl = panUpload.secure_url;
+        } catch (error) {
+            console.error("Error uploading PAN card:", error);
         }
     }
 
@@ -66,6 +80,16 @@ exports.createStaff = asyncHandler(async (req, res) => {
         }
     }
 
+    // Parse bankDetails if it's a string
+    let parsedBankDetails = bankDetails;
+    if (typeof bankDetails === 'string') {
+        try {
+            parsedBankDetails = JSON.parse(bankDetails);
+        } catch (error) {
+            console.error("Error parsing bank details:", error);
+        }
+    }
+
     // Prepare staff data
     const staffData = {
         firstName,
@@ -77,7 +101,7 @@ exports.createStaff = asyncHandler(async (req, res) => {
         employeeRole,
         school,
         branch,
-        employeeId,
+        employeeId, // Auto-generated
         title,
         emailIDPersonal,
         bloodGroup,
@@ -89,7 +113,7 @@ exports.createStaff = asyncHandler(async (req, res) => {
         nationality,
         religion,
         fatherName,
-        bankDetails,
+        bankDetails: parsedBankDetails,
         currentAddress,
         permanentAddress,
         photoUrl,
@@ -99,109 +123,178 @@ exports.createStaff = asyncHandler(async (req, res) => {
     };
 
     // If not superadmin, associate with schoolAdmin
-    if (userRole !== 'superadmin') {
-        staffData.branch = userId;
-    }
+    // if (userRole !== 'superadmin') {
+    //     staffData.branch = userId;
+    // }
 
     // Create staff record
-    const staff = await Staff.create(staffData);
-    await Branch.findByIdAndUpdate(branch, {
-        $push: { branches: staff._id }
-    });
-    res.status(201).json({
-        success: true,
-        data: staff
-    });
-});
+    try {
+        const staff = await Staff.create(staffData);
 
-exports.getAllStaff = asyncHandler(async (req, res) => {
-    let query;
-    const userId = req.user.id;
-    const userRole = req.user.role;
-
-    // Copy req.query
-    const reqQuery = { ...req.query };
-
-    // Fields to exclude from filtering
-    const removeFields = ['select', 'sort', 'page', 'limit'];
-    removeFields.forEach(param => delete reqQuery[param]);
-
-    // For non-superadmin users, only show staff from their branches
-    if (userRole !== 'superadmin') {
-        // Find all branches associated with this school admin
-        const schoolAdmin = await SchoolAdmin.findById(userId);
-        if (!schoolAdmin) {
-            return res.status(404).json({
-                success: false,
-                message: 'School admin not found'
+        if (branch) {
+            await Branch.findByIdAndUpdate(branch, {
+                $push: { branches: staff._id }
             });
         }
 
-        // Add schoolAdmin filter to query
-        reqQuery.schoolAdmin = userId;
+        res.status(201).json({
+            success: true,
+            data: staff
+        });
+    } catch (error) {
+        console.error("Error creating staff:", error);
+        res.status(400).json({
+            success: false,
+            message: error.message || 'Error creating staff record'
+        });
+    }
+});
+
+// Update staff controller - similar modifications
+exports.updateStaff = asyncHandler(async (req, res) => {
+    const staffId = req.params.id;
+
+    const {
+        firstName, lastName, dateOfBirth, phoneNumber, emailIDOfficial, gender,
+        employeeRole, school, branch, title, emailIDPersonal,
+        bloodGroup, maritalStatus, marriageAnniversary, department, subDepartment,
+        emergencyContact, nationality, religion, fatherName, bankDetails,
+        currentAddress, permanentAddress, photoBase64, aadhaarCardBase64, panCardBase64
+    } = req.body;
+
+    // Find existing staff record
+    const existingStaff = await Staff.findById(staffId);
+    if (!existingStaff) {
+        return res.status(404).json({
+            success: false,
+            message: 'Staff not found'
+        });
     }
 
-    // Create query string
-    let queryStr = JSON.stringify(reqQuery);
+    // Handle base64 file uploads
+    let photoUrl = existingStaff.photoUrl;
+    let aadhaarCardUrl = existingStaff.aadhaarCardUrl;
+    let panCardUrl = existingStaff.panCardUrl;
 
-    // Create operators ($gt, $gte, etc)
-    queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
-    // Finding resource
-    query = Staff.find(JSON.parse(queryStr))
-        .populate('branch', 'name displayName')
-
-    // Select Fields
-    if (req.query.select) {
-        const fields = req.query.select.split(',').join(' ');
-        query = query.select(fields);
+    // Upload photo if present in base64 format
+    if (photoBase64 && photoBase64.startsWith('data:')) {
+        try {
+            const photoUpload = await cloudinary.uploader.upload(photoBase64, {
+                folder: 'toondemy-staff-photos',
+                allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
+            });
+            photoUrl = photoUpload.secure_url;
+        } catch (error) {
+            console.error("Error uploading photo:", error);
+        }
     }
 
-    // Sort
-    if (req.query.sort) {
-        const sortBy = req.query.sort.split(',').join(' ');
-        query = query.sort(sortBy);
-    } else {
-        query = query.sort('-createdAt');
+    // Upload Aadhaar card if present in base64 format
+    if (aadhaarCardBase64 && aadhaarCardBase64.startsWith('data:')) {
+        try {
+            const aadhaarUpload = await cloudinary.uploader.upload(aadhaarCardBase64, {
+                folder: 'toondemy-staff-documents',
+                allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf']
+            });
+            aadhaarCardUrl = aadhaarUpload.secure_url;
+        } catch (error) {
+            console.error("Error uploading Aadhaar card:", error);
+        }
     }
 
-    // Pagination
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-
-    // Count documents with the same filters
-    const total = await Staff.countDocuments(JSON.parse(queryStr));
-
-    query = query.skip(startIndex).limit(limit);
-
-    // Executing query
-    const staff = await query;
-
-    // Pagination result
-    const pagination = {};
-
-    if (endIndex < total) {
-        pagination.next = {
-            page: page + 1,
-            limit
-        };
+    // Upload PAN card if present in base64 format
+    if (panCardBase64 && panCardBase64.startsWith('data:')) {
+        try {
+            const panUpload = await cloudinary.uploader.upload(panCardBase64, {
+                folder: 'toondemy-staff-documents',
+                allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf']
+            });
+            panCardUrl = panUpload.secure_url;
+        } catch (error) {
+            console.error("Error uploading PAN card:", error);
+        }
     }
 
-    if (startIndex > 0) {
-        pagination.prev = {
-            page: page - 1,
-            limit
-        };
+    // Parse bankDetails if it's a string
+    let parsedBankDetails = bankDetails;
+    if (typeof bankDetails === 'string') {
+        try {
+            parsedBankDetails = JSON.parse(bankDetails);
+        } catch (error) {
+            console.error("Error parsing bank details:", error);
+        }
     }
 
-    res.status(200).json({
-        success: true,
-        count: staff.length,
-        pagination,
-        data: staff
-    });
+    // Prepare staff data for update
+    const staffData = {
+        firstName,
+        lastName,
+        dateOfBirth,
+        phoneNumber,
+        emailIDOfficial,
+        gender,
+        employeeRole,
+        school,
+        branch,
+        title,
+        emailIDPersonal,
+        bloodGroup,
+        maritalStatus,
+        marriageAnniversary,
+        department,
+        subDepartment,
+        emergencyContact,
+        nationality,
+        religion,
+        fatherName,
+        bankDetails: parsedBankDetails,
+        currentAddress,
+        permanentAddress,
+        photoUrl,
+        aadhaarCardUrl,
+        panCardUrl,
+        updatedAt: Date.now()
+    };
+
+    // Update staff record
+    try {
+        const updatedStaff = await Staff.findByIdAndUpdate(staffId, staffData, {
+            new: true,
+            runValidators: true
+        });
+
+        res.status(200).json({
+            success: true,
+            data: updatedStaff
+        });
+    } catch (error) {
+        console.error("Error updating staff:", error);
+        res.status(400).json({
+            success: false,
+            message: error.message || 'Error updating staff record'
+        });
+    }
+});
+exports.getAllStaff = asyncHandler(async (req, res) => {
+    try {
+        // Await the query to execute and get the results
+        const staff = await Staff.find();
+
+        // Send the staff data as a response
+        res.status(200).json({
+            success: true,
+            count: staff.length,
+            data: staff
+        });
+    } catch (err) {
+        console.log(err);
+        // Send error response
+        res.status(500).json({
+            success: false,
+            message: "Error retrieving staff data",
+            error: err.message
+        });
+    }
 });
 
 exports.getStaff = asyncHandler(async (req, res) => {
@@ -232,70 +325,7 @@ exports.getStaff = asyncHandler(async (req, res) => {
     });
 });
 
-exports.updateStaff = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    const userRole = req.user.role;
 
-    let staff = await Staff.findById(req.params.id);
-
-    if (!staff) {
-        return res.status(404).json({
-            success: false,
-            message: `No staff found with id ${req.params.id}`
-        });
-    }
-
-    // Check if user has permission to update this staff (superadmin can update all)
-    if (userRole !== 'superadmin' && String(staff.schoolAdmin) !== String(userId)) {
-        return res.status(403).json({
-            success: false,
-            message: 'Not authorized to update this staff record'
-        });
-    }
-
-    // Handle file uploads if present
-    if (req.files) {
-        // Upload photo if present
-        if (req.files.photo) {
-            const photoUpload = await cloudinary.uploader.upload(req.files.photo.tempFilePath, {
-                folder: 'toondemy-staff-photos',
-                allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
-            });
-            req.body.photoUrl = photoUpload.secure_url;
-        }
-
-        // Upload Aadhaar card if present
-        if (req.files.aadhaarCard) {
-            const aadhaarUpload = await cloudinary.uploader.upload(req.files.aadhaarCard.tempFilePath, {
-                folder: 'toondemy-staff-documents',
-                allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf']
-            });
-            req.body.aadhaarCardUrl = aadhaarUpload.secure_url;
-        }
-
-        // Upload PAN card if present  
-        if (req.files.panCard) {
-            const panUpload = await cloudinary.uploader.upload(req.files.panCard.tempFilePath, {
-                folder: 'toondemy-staff-documents',
-                allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf']
-            });
-            req.body.panCardUrl = panUpload.secure_url;
-        }
-    }
-
-    // Update timestamp
-    req.body.updatedAt = Date.now();
-
-    staff = await Staff.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
-        runValidators: true
-    });
-
-    res.status(200).json({
-        success: true,
-        data: staff
-    });
-});
 
 exports.deleteStaff = asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -415,30 +445,29 @@ exports.assignStaffToBranch = asyncHandler(async (req, res) => {
 });
 exports.deactivateAccount = asyncHandler(async (req, res) => {
     const { staffId } = req.params;
-  
+
     if (!mongoose.Types.ObjectId.isValid(staffId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid staffId format",
-      });
+        return res.status(400).json({
+            success: false,
+            message: "Invalid staffId format",
+        });
     }
-  
+
     const staff = await Staff.findById(staffId);
     if (!staff) {
-      return res.status(404).json({
-        success: false,
-        message: "Staff not found",
-      });
+        return res.status(404).json({
+            success: false,
+            message: "Staff not found",
+        });
     }
-  
+
     // Toggle the isActive status
     staff.isActive = !staff.isActive;
     await staff.save();
-  
+
     res.status(200).json({
-      success: true,
-      message: `Staff account has been ${staff.isActive ? "activated" : "deactivated"} successfully.`,
-      data: staff,
+        success: true,
+        message: `Staff account has been ${staff.isActive ? "activated" : "deactivated"} successfully.`,
+        data: staff,
     });
-  });
-  
+});

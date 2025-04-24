@@ -266,7 +266,6 @@ exports.getAllAcademicYears = async (req, res) => {
 // BranchController.js
 exports.getBranchesforschool = async (req, res) => {
     try {
-        console.log("haj")
       const { schoolId } = req.query;
       console.log(schoolId)
       // Filter branches by schoolId if provided

@@ -18,7 +18,7 @@ router
     .route('/')
     .get(getAllStaff)
     .post(createStaff);
-router.put('/deactivate/:staffId', roleMiddleware(["superadmin", "admin"]), deactivateAccount);
+router.put('/deactivate/:staffId', deactivateAccount);
 
 router
     .route('/:id')

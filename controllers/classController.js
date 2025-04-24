@@ -4,12 +4,7 @@ const Class = require('../models/classModel');
 exports.getAllClasses = async (req, res) => {
   try {
     const classes = await Class.find()
-      .populate('school', 'name')
-      .populate('branch', 'name')
-      .populate('grade', 'name')
-      .populate('academicYear', 'name')
-      .populate('teacher', 'name');
-    
+
     return res.status(200).json({
       success: true,
       count: classes.length,
@@ -27,19 +22,14 @@ exports.getAllClasses = async (req, res) => {
 exports.getClassById = async (req, res) => {
   try {
     const classObj = await Class.findById(req.params.id)
-      .populate('school', 'name')
-      .populate('branch', 'name')
-      .populate('grade', 'name')
-      .populate('academicYear', 'name')
-      .populate('teacher', 'name');
-    
+     
     if (!classObj) {
       return res.status(404).json({
         success: false,
         error: 'Class not found'
       });
     }
-    
+
     return res.status(200).json({
       success: true,
       data: classObj
@@ -56,7 +46,7 @@ exports.getClassById = async (req, res) => {
 exports.createClass = async (req, res) => {
   try {
     const newClass = await Class.create(req.body);
-    
+
     return res.status(201).json({
       success: true,
       data: newClass
@@ -69,7 +59,7 @@ exports.createClass = async (req, res) => {
         error: messages
       });
     }
-    
+
     return res.status(500).json({
       success: false,
       error: 'Server Error'
@@ -85,14 +75,14 @@ exports.updateClass = async (req, res) => {
       req.body,
       { new: true, runValidators: true }
     );
-    
+
     if (!classObj) {
       return res.status(404).json({
         success: false,
         error: 'Class not found'
       });
     }
-    
+
     return res.status(200).json({
       success: true,
       data: classObj
@@ -109,16 +99,16 @@ exports.updateClass = async (req, res) => {
 exports.deleteClass = async (req, res) => {
   try {
     const classObj = await Class.findById(req.params.id);
-    
+
     if (!classObj) {
       return res.status(404).json({
         success: false,
         error: 'Class not found'
       });
     }
-    
+
     await classObj.remove();
-    
+
     return res.status(200).json({
       success: true,
       data: {}
@@ -135,18 +125,18 @@ exports.deleteClass = async (req, res) => {
 exports.toggleClassStatus = async (req, res) => {
   try {
     const classObj = await Class.findById(req.params.id);
-    
+
     if (!classObj) {
       return res.status(404).json({
         success: false,
         error: 'Class not found'
       });
     }
-    
+
     // Toggle the isActive status
     classObj.isActive = !classObj.isActive;
     await classObj.save();
-    
+
     return res.status(200).json({
       success: true,
       data: classObj,
