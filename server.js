@@ -16,6 +16,7 @@ const levelRoutes = require("./routes/levelRoutes");
 dotenv.config();
 
 const app = express();
+app.use(morgan('dev'));
 app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
