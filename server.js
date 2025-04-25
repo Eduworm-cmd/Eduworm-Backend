@@ -12,6 +12,7 @@ const gradeRoutes = require("./routes/gradeRoutes");
 const classRoutes = require("./routes/classRoutes");
 const academicRoutes = require("./routes/AcademicYearRoutes");
 const levelRoutes = require("./routes/levelRoutes");
+const contentRoutes = require("./routes/contentRoutes");
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use("/api/grade", gradeRoutes);
 app.use("/api/class", classRoutes);
 app.use("/api/academic", academicRoutes);
 app.use("/api/level", levelRoutes);
+app.use("/api/content", contentRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
