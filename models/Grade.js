@@ -32,11 +32,9 @@ const gradeSchema = new mongoose.Schema({
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'  // Generic reference to any user
   },
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'  // Generic reference to any user
   }
 }, { timestamps: true });
 

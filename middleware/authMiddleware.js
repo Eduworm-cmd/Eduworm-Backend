@@ -22,7 +22,7 @@ const roleMiddleware = (allowedRoles) => {
         return res.status(403).json({ message: `Access denied for role: ${decoded.role}` });
       }
 
-      req.user = decoded; // decoded contains: id, role
+      req.user = decoded; 
       next();
     } catch (err) {
       res.status(401).json({ message: "Invalid or expired token" });

@@ -74,12 +74,12 @@ exports.getGrade = async (req, res) => {
     }
 
     // Check if schooladmin has access to this grade
-    // if (req.user.role === 'schooladmin' && grade.school._id.toString() !== req.user.schoolId.toString()) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: 'Not authorized to access this grade'
-    //   });
-    // }
+    if (req.user.role === 'schooladmin' && grade.school._id.toString() !== req.user.schoolId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this grade'
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -106,7 +106,8 @@ exports.updateGrade = async (req, res) => {
     }
 
     // Check if schooladmin has access to this grade
-    if (req.user.role === 'schooladmin' && grade.school.toString() !== req.user.schoolId.toString()) {
+    console.log(req)
+    if (req?.user?.role === 'schooladmin' && grade.school.toString() !== req.user.schoolId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this grade'
@@ -134,8 +135,8 @@ exports.updateGrade = async (req, res) => {
     ).populate([
       { path: 'school', select: 'name' },
       { path: 'level', select: 'name' },
-      { path: 'createdBy', select: 'name role' },
-      { path: 'updatedBy', select: 'name role' }
+      { path: 'createdBy', select: 'name role'},
+      { path: 'updatedBy', select: 'name role'}
     ]);
 
     res.status(200).json({
