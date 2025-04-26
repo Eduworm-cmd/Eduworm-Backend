@@ -13,6 +13,7 @@ const classRoutes = require("./routes/classRoutes");
 const academicRoutes = require("./routes/AcademicYearRoutes");
 const levelRoutes = require("./routes/levelRoutes");
 const contentRoutes = require("./routes/contentRoutes");
+const playlistRoutes = require("./routes/playListRoutes");
 
 dotenv.config();
 
@@ -40,7 +41,7 @@ app.use("/api/class", classRoutes);
 app.use("/api/academic", academicRoutes);
 app.use("/api/level", levelRoutes);
 app.use("/api/content", contentRoutes);
-
+app.use("/api", playlistRoutes);
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

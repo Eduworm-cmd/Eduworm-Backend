@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 
 // Define the parent schema as a sub-document
 const parentSchema = new mongoose.Schema({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  relationship: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
+  firstName: { type: String },
+  lastName: { type: String },
+  relationship: { type: String },
+  phoneNumber: { type: String },
   email: { type: String },
   currentAddress: { type: String },
   photo: { type: String } // URL of the uploaded image from Cloudinary
@@ -14,13 +14,13 @@ const parentSchema = new mongoose.Schema({
 // Define the student schema
 const studentSchema = new mongoose.Schema({
   // Student Personal Information
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  dateOfBirth: { type: Date, required: true },
-  gender: { type: String, required: true, enum: ["Male", "Female", "Other"] },
+  firstName: { type: String },
+  lastName: { type: String },
+  dateOfBirth: { type: Date },
+  gender: { type: String },
   
   // School Information
-  school: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
+  school: { type: String, ref: "Branch" },
   rollNo: { type: String },
   admissionNumber: { type: String },
   dateOfJoining: { type: Date },
@@ -31,8 +31,8 @@ const studentSchema = new mongoose.Schema({
   
   // Current Class Information
   currentClass: {
-    academicYear: { type: String, required: true }, // e.g., "AY 2024-2025"
-    grade: { type: String, required: true }, // e.g., "KG-2"
+    academicYear: { type: String }, // e.g., "AY 2024-2025"
+    grade: { type: String }, // e.g., "KG-2"
     section: { type: String } // e.g., "MG-2"
   },
   
@@ -40,7 +40,7 @@ const studentSchema = new mongoose.Schema({
   parents: [parentSchema],
   
   // Branch reference
-  branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch", required: true },
+  branch: { type: String, ref: "Branch" },
   
   // Account status
   isActive: { type: Boolean, default: true }

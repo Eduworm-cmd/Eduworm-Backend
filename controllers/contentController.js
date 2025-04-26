@@ -93,3 +93,41 @@ exports.deleteContent = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+exports.getContentByGrade= async (req, res) => {
+    try {
+      const { gradeId } = req.params;
+      
+      // Validate that gradeId is a valid ObjectId
+      if (!gradeId || !require('mongoose').Types.ObjectId.isValid(gradeId)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid grade ID format' 
+        });
+      }
+  
+      // Find all content items with the specified grade ID
+      const contentItems = await Content.find({ grade: gradeId })
+        .populate('grade', 'name level') // Optionally populate grade details
+        .sort({ createdAt: -1 }); // Sort by newest first
+      
+      if (contentItems.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No content found for this grade'
+        });
+      }
+  
+      return res.status(200).json({
+        success: true,
+        count: contentItems.length,
+        data: contentItems
+      });
+    } catch (error) {
+      console.error('Error fetching content by grade:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  }
