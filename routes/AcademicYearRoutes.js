@@ -10,7 +10,7 @@ router.route("/")
   .get(academicYearController.getAllAcademicYears)
   .post(academicYearController.createAcademicYear);
 
-// Single academic year routes
+// Single academic year route
 router.route("/:id")
   .get(academicYearController.getAcademicYear)
   .patch(academicYearController.updateAcademicYear)

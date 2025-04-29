@@ -90,7 +90,7 @@ const loginUser = async (req, res) => {
     user.staticOtp = "123456";
     await user.save();
 
-    res.status(200).json({ message: "OTP sent successfully",otp:user.staticOtp }); // In prod: don't send OTP here
+    res.status(200).json({ message: "OTP sent successfully",otp:user.staticOtp }); 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

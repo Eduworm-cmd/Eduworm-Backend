@@ -13,12 +13,12 @@ exports.createContent = async (req, res) => {
                 { folder: "content_previews" }
             );
 
-            previewImageUrl = uploadResponse.secure_url; // Get the URL of the uploaded image
+            previewImageUrl = uploadResponse.secure_url; 
         }
 
         const content = new Content({
             ...req.body,
-            previewImage: previewImageUrl // Save the preview image URL
+            previewImage: previewImageUrl
         });
 
         await content.save();
