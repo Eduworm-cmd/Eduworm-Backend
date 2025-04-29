@@ -13,10 +13,4 @@ module.exports = cloudinary;
 
 
 
-///cloudnary links 
-// cloud_name
-// api_key
-// api_secret
 
-
-//mongo db permisssions
