@@ -7,7 +7,6 @@ const branchSchema = new mongoose.Schema({
     email: { type: String, required: true },
     country: { type: String, required: true },
     isActive: { type: Boolean, default: true },
-
     state: { type: String, required: true },
     city: { type: String, required: true },
     pinCode: { type: String, required: true },

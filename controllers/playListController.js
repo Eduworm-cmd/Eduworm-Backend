@@ -69,7 +69,7 @@ exports.getAllPlaylists = async (req, res) => {
   try {
     const playlists = await Playlist.find()
       .populate("author", "name")
-      .populate("grade", "name")
+      .populate("grade", "name")  
       .sort({ createdAt: -1 });
     
     res.status(200).json({
