@@ -150,6 +150,8 @@ exports.createStaff = asyncHandler(async (req, res) => {
     }
 });
 
+
+
 // Update staff controller - similar modifications
 exports.updateStaff = asyncHandler(async (req, res) => {
     const staffId = req.params.id;
@@ -443,6 +445,7 @@ exports.assignStaffToBranch = asyncHandler(async (req, res) => {
         data: staff
     });
 });
+
 exports.deactivateAccount = asyncHandler(async (req, res) => {
     const { staffId } = req.params;
 

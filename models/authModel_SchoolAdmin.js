@@ -1,3 +1,4 @@
+// Auth Schema
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
@@ -27,22 +28,25 @@ const authSchema = new mongoose.Schema(
     schoolLogo: { type: String },
     branches: [{ type: mongoose.Schema.Types.ObjectId, ref: "Branch" }],
     classes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],
-    academicYear: [{ type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" }],
+    academicYear: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" },
+    ],
   },
   { timestamps: true }
 );
 
-// Hash branchPassword before saving
+// Hash password and branch password before saving
 authSchema.pre("save", async function (next) {
   if (this.isModified("branchPassword")) {
     const salt = await bcrypt.genSalt(10);
     this.branchPassword = await bcrypt.hash(this.branchPassword, salt);
   }
+
   next();
 });
 
-// Use branchPassword for authentication
-authSchema.methods.matchPassword = async function (enteredPassword) {
+// Add method to compare branch password
+authSchema.methods.matchBranchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.branchPassword);
 };
 

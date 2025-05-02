@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const Auth = require("../models/authModel_SchoolAdmin");
 const cloudinary = require("../config/cloudinary");
 const bcrypt = require("bcryptjs");
+const { default: mongoose } = require("mongoose");
 
 const generateToken = (userId, role) => {
   return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
@@ -46,7 +47,7 @@ const verifyOtp = async (req, res) => {
   try {
     const { phoneNumber, staticOtp } = req.body;
 
-    const user = await Auth.findOne({ phone:phoneNumber });
+    const user = await Auth.findOne({ phone: phoneNumber });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -67,10 +68,10 @@ const verifyOtp = async (req, res) => {
       token,
       user: {
         id: user._id,
-        email:user.branchEmail,
+        email: user.branchEmail,
         phoneNumber: user.phoneNumber,
         role: user.role,
-        schoolName:user.schoolName,
+        schoolName: user.schoolName,
         firstName: user.firstName,
         lastName: user.lastName
       }
@@ -85,7 +86,7 @@ const verifyOtp = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
-    
+
     const user = await Auth.findOne({ phone: phoneNumber });
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
@@ -102,38 +103,61 @@ const loginUser = async (req, res) => {
 
 
 
+// Controller function for login
 const loginWithEmailPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log("Login attempt for:", email);
+    console.log("Password provided:", password); // Be careful with logging passwords in production
+
     const user = await Auth.findOne({ branchEmail: email });
 
-    console.log(user);
-    
+    console.log("User found:", user ? "Yes" : "No");
+
     if (!user) return res.status(404).json({ message: "User not found" });
     if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
-    
-    // const isMatch = await bcrypt.compare(password, user.branchPassword);
-    // if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // console.log( "Working Or Not :",isMatch);
-    
-    const token = generateToken(user._id, user.role);
+    // Log the stored hashed password for debugging
+    console.log("Stored hashed password:", user.branchPassword);
 
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        email:user.branchEmail,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        schoolName:user.schoolName,
-        firstName: user.firstName,
-        lastName: user.lastName
+    try {
+      // Debug the bcrypt comparison
+      const isMatch = await bcrypt.compare(password, user.branchPassword);
+      console.log("Password comparison result:", isMatch);
+
+      if (!isMatch) {
+        // TEMPORARY WORKAROUND: If you need to bypass password check temporarily
+        // Comment the next line and uncomment the workaround below
+        return res.status(400).json({ message: "Invalid credentials" });
+
+        // TEMPORARY WORKAROUND - REMOVE IN PRODUCTION
+        // console.log("WARNING: Bypassing password check for testing!");
       }
-    });
+
+      console.log("Authentication successful");
+
+      const token = generateToken(user._id, user.role);
+
+      res.status(200).json({
+        message: "Login successful",
+        token,
+        user: {
+          id: user._id,
+          email: user.branchEmail,
+          phoneNumber: user.phone, // Changed from phoneNumber to phone to match schema
+          role: user.role,
+          schoolName: user.schoolName,
+          firstName: user.firstName,
+          lastName: user.lastName
+        }
+      });
+    } catch (bcryptError) {
+      console.error("Bcrypt comparison error:", bcryptError);
+      return res.status(500).json({ message: "Authentication error" });
+    }
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -156,7 +180,7 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       address,
       startDate,
       endDate,
-      academicYear, 
+      academicYear,
       branchName,
       branchEmail,
       branchPassword,
@@ -231,7 +255,7 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       address,
       startDate,
       endDate,
-      academicYear, 
+      academicYear,
       branchName,
       branchEmail,
       branchPassword: hashedPassword,
@@ -254,40 +278,32 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
 };
 
 
-
-
-
-
-
 // Get All Schools With Full Details
 const getFullSchools = async (req, res) => {
   try {
     const allSchools = await Auth.find({ role: 'schooladmin' })
-    .populate({
-      path: 'academicYear',
-      model: 'AcademicYear',
-      select: 'name startDate endDate',
-    })
+      .populate({
+        path: 'academicYear',
+        model: 'AcademicYear',
+        select: 'name startDate endDate',
+      })
       .populate({
         path: 'classes',
         model: 'Class',
         select: 'name subjects',
       })
-      .lean(); 
-      
-      return res.status(200).json({
-        message: "Schools retrieved successfully",
-        allSchools,
-      });
-    } catch (error) {
-      return res.status(500).json({
+      .lean();
+
+    return res.status(200).json({
+      message: "Schools retrieved successfully",
+      allSchools,
+    });
+  } catch (error) {
+    return res.status(500).json({
       message: error.message || "Something went wrong",
     });
   }
 };
-
-
-
 
 // SchoolAdminController.js
 const getAllSchools = async (req, res) => {
@@ -300,9 +316,39 @@ const getAllSchools = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({
-      status: "fail",
       message: error.message
     });
+  }
+};
+
+
+const getSchoolById = async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+        
+    if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid School Id format" 
+      });
+    }
+    
+    const school = await Auth.findById(schoolId);
+    
+    if (!school) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "School not found" 
+      });
+    }
+    
+    return res.status(200).json({ 
+      success: true, 
+      message: "School fetched successfully", 
+      data: school 
+    });
+  } catch (error) {
+    res.status(400).json({message: error.message});
   }
 };
 
@@ -317,6 +363,7 @@ module.exports = {
   loginUser,
   getAllSchools,
   getFullSchools,
+  getSchoolById,
   loginWithEmailPassword,
   createSchoolAdminBySuperAdmin
 };

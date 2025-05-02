@@ -16,6 +16,9 @@ const contentRoutes = require("./routes/contentRoutes");
 const playlistRoutes = require("./routes/playListRoutes");
 const menuRoutes = require("./routes/menuRoutes");
 
+// Super Admin
+const SA_StaffRotes = require('./routes/SuperAdmin/staffRoutes');
+
 dotenv.config();
 
 const app = express();
@@ -44,6 +47,16 @@ app.use("/api/level", levelRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/menu", menuRoutes);
 app.use("/api", playlistRoutes);
+
+
+
+// Super Admin APIS
+app.use('/api/SA_Staff',SA_StaffRotes)
+
+
+
+
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

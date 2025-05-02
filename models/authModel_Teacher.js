@@ -140,7 +140,7 @@ const StaffSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   }
-});
+},{ timestamps:true});
 
 // Function to generate a unique employee ID
 function generateEmployeeId() {
