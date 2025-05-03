@@ -14,8 +14,6 @@ const academicRoutes = require("./routes/AcademicYearRoutes");
 const levelRoutes = require("./routes/levelRoutes");
 const contentRoutes = require("./routes/contentRoutes");
 const playlistRoutes = require("./routes/playListRoutes");
-const menuRoutes = require("./routes/menuRoutes");
-
 // Super Admin
 const SA_StaffRotes = require('./routes/SuperAdmin/staffRoutes');
 
@@ -45,16 +43,12 @@ app.use("/api/class", classRoutes);
 app.use("/api/academic", academicRoutes);
 app.use("/api/level", levelRoutes);
 app.use("/api/content", contentRoutes);
-app.use("/api/menu", menuRoutes);
 app.use("/api", playlistRoutes);
 
 
 
-// Super Admin APIS
+// Super Admin API
 app.use('/api/SA_Staff',SA_StaffRotes)
-
-
-
 
 
 const PORT = process.env.PORT || 4000;

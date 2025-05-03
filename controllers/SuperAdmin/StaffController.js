@@ -2,8 +2,8 @@ const cloudinary = require("cloudinary");
 const staffModel = require("../../models/SuperAdmin/staffModel");
 
 class StaffController {
+
   createStaff = async (req, res) => {
-    
     try {
       if (!req.body) {
         return res.status(400).json({
@@ -15,6 +15,7 @@ class StaffController {
       const {
         firstName,
         lastName,
+        password,
         dateOfBirth,
         phoneNumber,
         emailId,
@@ -22,7 +23,7 @@ class StaffController {
         employeeRole,
         department,
         currentAddress,
-        profile, 
+        profile,
         nationality,
         religion,
         fatherName,
@@ -35,6 +36,7 @@ class StaffController {
       const requiredFields = {
         firstName,
         lastName,
+        password,
         dateOfBirth,
         phoneNumber,
         emailId,
@@ -46,7 +48,7 @@ class StaffController {
       };
 
       const missingFields = Object.entries(requiredFields)
-        .filter(([_, value]) => value === undefined || value === null || value === "")
+        .filter(([_, value]) => !value)
         .map(([key]) => key);
 
       if (missingFields.length > 0) {
@@ -61,12 +63,17 @@ class StaffController {
       });
 
       if (existingStaff) {
+        const conflictFields = [];
+        if (existingStaff.emailId === emailId) conflictFields.push("Email");
+        if (existingStaff.phoneNumber === phoneNumber) conflictFields.push("Phone Number");
+
         return res.status(400).json({
           success: false,
-          message: "Email ID or phone number already exists",
+          message: `${conflictFields.join(" and ")} already exist${conflictFields.length > 1 ? "" : "s"}`,
         });
       }
 
+      // Upload profile image
       let profileUrl = "";
       if (profile) {
         try {
@@ -78,12 +85,10 @@ class StaffController {
             }
           );
           profileUrl = uploadResult.secure_url;
-        } catch (uploadError) {
-          console.error("Cloudinary upload error:", uploadError);
+        } catch (error) {
           return res.status(500).json({
             success: false,
-            message: "Failed to upload profile photo",
-            error: uploadError.message,
+            message: "Profile upload failed: " + error.message,
           });
         }
       }
@@ -91,6 +96,7 @@ class StaffController {
       const newStaff = await staffModel.create({
         firstName,
         lastName,
+        password,
         dateOfBirth,
         phoneNumber,
         emailId,
@@ -111,29 +117,15 @@ class StaffController {
       return res.status(201).json({
         success: true,
         message: "Staff member created successfully",
-        data: newStaff,
+        data: {
+          _id: newStaff._id,
+          employeeId: newStaff.employeeId,
+          firstName: newStaff.firstName,
+        },
       });
+
     } catch (error) {
       console.error("Server error:", error);
-      
-      if (error.name === "ValidationError") {
-        const messages = Object.values(error.errors).map((val) => val.message);
-        return res.status(400).json({
-          success: false,
-          message: "Validation error",
-          errors: messages,
-        });
-      }
-
-      if (error.code === 11000) {
-        const field = Object.keys(error.keyValue)[0];
-        return res.status(400).json({
-          success: false,
-          message: `${field} already exists`,
-          error: `${field} must be unique`,
-        });
-      }
-
       return res.status(500).json({
         success: false,
         message: "Server error",
@@ -144,23 +136,55 @@ class StaffController {
 
 
   //Get All Staaff
-  GetAllStaff = async (req,res) =>{
+  GetAllStaff = async (req, res) => {
     try {
       const staff = await staffModel.find();
-      
+
       if (!staff) {
         return res.status(404).json({ message: 'No staff found' });
       }
-  
+
       res.status(200).json(staff);
-  
+
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Server error' });
     }
   }
-}
 
+
+  // Get Staff By Id
+  getStaffById = async (req, res) => {
+    try {
+      const { staffId } = req.params;
+  
+      if (!staffId) {
+        return res.status(400).json({ success: false, message: "Staff ID is required." });
+      }
+  
+      if (!mongoose.Types.ObjectId.isValid(staffId)) {
+        return res.status(400).json({ success: false, message: "Invalid Staff ID format." });
+      }
+  
+      const staff = await staffModel.findById(staffId);
+  
+      if (!staff) {
+        return res.status(404).json({ success: false, message: "Staff not found." });
+      }
+  
+      return res.status(200).json({
+        success: true,
+        message: "Staff fetched successfully.",
+        data: staff,
+      });
+  
+    } catch (error) {
+      console.error("Error fetching staff by ID:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  };
+  
+}
 
 
 module.exports = new StaffController();

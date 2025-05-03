@@ -36,18 +36,17 @@ const authSchema = new mongoose.Schema(
 );
 
 // Hash password and branch password before saving
-authSchema.pre("save", async function (next) {
-  if (this.isModified("branchPassword")) {
-    const salt = await bcrypt.genSalt(10);
-    this.branchPassword = await bcrypt.hash(this.branchPassword, salt);
+authSchema.pre('save', async function(next) {
+  try{
+     const salt = await bcrypt.genSalt(10);
+     this.branchPassword = await bcrypt.hash(this.branchPassword, salt);
+  }catch(error){
+    next(error);
   }
+})
 
-  next();
-});
-
-// Add method to compare branch password
-authSchema.methods.matchBranchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.branchPassword);
-};
+authSchema.methods.comparePassword = async function(candidatePassword){
+  return await bcrypt.compare(candidatePassword,this.branchPassword);
+}
 
 module.exports = mongoose.model("SchoolAdmin", authSchema);

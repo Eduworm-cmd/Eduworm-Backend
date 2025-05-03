@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Auth = require("../models/authModel_SchoolAdmin");
 const cloudinary = require("../config/cloudinary");
-const bcrypt = require("bcryptjs");
 const { default: mongoose } = require("mongoose");
 
 const generateToken = (userId, role) => {
@@ -109,13 +108,12 @@ const loginWithEmailPassword = async (req, res) => {
     const { email, password } = req.body;
 
     console.log("Login attempt for:", email);
-    console.log("Password provided:", password); // Be careful with logging passwords in production
+    console.log("Password provided:", password); 
 
     const user = await Auth.findOne({ branchEmail: email });
 
-    console.log("User found:", user ? "Yes" : "No");
-
     if (!user) return res.status(404).json({ message: "User not found" });
+   
     if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
 
     // Log the stored hashed password for debugging
@@ -123,16 +121,16 @@ const loginWithEmailPassword = async (req, res) => {
 
     try {
       // Debug the bcrypt comparison
-      const isMatch = await bcrypt.compare(password, user.branchPassword);
+      const isMatch = await user.comparePassword(password)
       console.log("Password comparison result:", isMatch);
 
       if (!isMatch) {
-        // TEMPORARY WORKAROUND: If you need to bypass password check temporarily
-        // Comment the next line and uncomment the workaround below
+      //   // TEMPORARY WORKAROUND: If you need to bypass password check temporarily
+      //   // Comment the next line and uncomment the workaround below
         return res.status(400).json({ message: "Invalid credentials" });
 
-        // TEMPORARY WORKAROUND - REMOVE IN PRODUCTION
-        // console.log("WARNING: Bypassing password check for testing!");
+      //   // TEMPORARY WORKAROUND - REMOVE IN PRODUCTION
+        console.log("WARNING: Bypassing password check for testing!");
       }
 
       console.log("Authentication successful");
@@ -145,7 +143,7 @@ const loginWithEmailPassword = async (req, res) => {
         user: {
           id: user._id,
           email: user.branchEmail,
-          phoneNumber: user.phone, // Changed from phoneNumber to phone to match schema
+          phoneNumber: user.phone, 
           role: user.role,
           schoolName: user.schoolName,
           firstName: user.firstName,
@@ -188,6 +186,7 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       schoolLogoBuffer,
     } = req.body;
 
+    // Validate required fields
     const requiredFields = {
       firstName,
       lastName,
@@ -215,18 +214,31 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       .map(([key]) => key);
 
     if (missingFields.length > 0) {
-      return res.status(400).json({ message: `Missing required fields: ${missingFields.join(", ")}` });
+      return res.status(400).json({
+        message: `Missing required fields: ${missingFields.join(", ")}`
+      });
     }
 
+    // Check if email, phone, or branchEmail already exists
     const existingUser = await Auth.findOne({
-      $or: [{ email }, { phone }],
+      $or: [
+        { email },
+        { phone },
+        { branchEmail }
+      ]
     });
 
     if (existingUser) {
-      return res.status(400).json({ message: "Email or phone number already exists" });
+      let conflictField = existingUser.email === email ? "Email" :
+                          existingUser.phone === phone ? "Phone number" :
+                          "Branch email";
+
+      return res.status(400).json({
+        message: `${conflictField} already exists`
+      });
     }
 
-    // Upload school logo
+    // Upload school logo to Cloudinary
     let schoolLogo = "";
     try {
       const uploadResponse = await cloudinary.uploader.upload(
@@ -234,13 +246,14 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
         { folder: "School Logos" }
       );
       schoolLogo = uploadResponse.secure_url;
-    } catch (error) {
-      return res.status(500).json({ message: "Logo upload failed: " + error.message });
+    } catch (uploadError) {
+      return res.status(500).json({
+        message: "Logo upload failed: " + uploadError.message
+      });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(branchPassword, 10);
 
+    // Create new school admin document
     const newSchoolAdmin = new Auth({
       firstName,
       lastName,
@@ -258,13 +271,14 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       academicYear,
       branchName,
       branchEmail,
-      branchPassword: hashedPassword,
+      branchPassword,
       branches: [],
       classes,
       isVerified: true,
       schoolLogo,
     });
 
+    // Save to database
     await newSchoolAdmin.save();
 
     return res.status(201).json({
@@ -273,9 +287,12 @@ const createSchoolAdminBySuperAdmin = async (req, res) => {
       schoolName: newSchoolAdmin.schoolName,
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: "Internal server error: " + error.message
+    });
   }
 };
+
 
 
 // Get All Schools With Full Details
