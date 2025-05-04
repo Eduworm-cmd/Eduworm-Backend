@@ -21,12 +21,25 @@ dotenv.config();
 
 const app = express();
 app.use(morgan('dev'));
+
+// CORS setup to allow specific origins and handle credentials
+const allowedOrigins = [
+    'http://localhost:5173',  // Development environment
+    'http://localhost:5174',  // Development environment
+    'https://a8th-creation.onrender.com',  // Production environment
+];
+
 app.use(cors({
-    origin: "*",
-    credentials: true
+    origin: function (origin, callback) {
+        // Allow requests with no origin (e.g., mobile apps or Postman)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'), false);
+        }
+    },
+    credentials: true,  // Allow cookies and credentials
 }));
-
-
 
 // Set JSON limits before any routes
 app.use(express.json({ limit: '100mb' }));
@@ -46,11 +59,8 @@ app.use("/api/level", levelRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api", playlistRoutes);
 
-
-
 // Super Admin API
-app.use('/api/SA_Staff',SA_StaffRotes)
-
+app.use('/api/SA_Staff', SA_StaffRotes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
