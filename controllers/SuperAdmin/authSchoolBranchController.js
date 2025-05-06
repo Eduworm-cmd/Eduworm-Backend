@@ -235,6 +235,8 @@ const createSchoolBranch = async (req, res) => {
     });
 
     const savedBranch = await newBranch.save();
+    school.branches.push(savedBranch._id);
+    await school.save();
 
     res.status(201).json({
       message: "Branch created successfully",
