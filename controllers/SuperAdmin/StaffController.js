@@ -1,6 +1,6 @@
 const cloudinary = require("cloudinary");
 const staffModel = require("../../models/SuperAdmin/staffModel");
-
+const mongoose = require('mongoose');
 class StaffController {
 
   createStaff = async (req, res) => {
@@ -166,8 +166,10 @@ class StaffController {
         return res.status(400).json({ success: false, message: "Invalid Staff ID format." });
       }
   
-      const staff = await staffModel.findById(staffId);
-  
+      const staff = await staffModel.findById(staffId).select('-password');
+      
+      console.log(staff);
+      
       if (!staff) {
         return res.status(404).json({ success: false, message: "Staff not found." });
       }
