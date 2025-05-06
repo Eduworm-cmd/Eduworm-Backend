@@ -3,11 +3,9 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
-const authRoutes = require("./routes/authRoutes_SchoolAdmin");
+const authSchoolBranchRoutes = require("./routes/SuperAdmin/authSchoolBranchRoutes");
 const superAdminAuthRoutes = require("./routes/authRoutes_SuperAdmin");
-const branchRoutes = require("./routes/branchRoutes");
 const studentRoutes = require("./routes/studentRoutes");
-const StaffRoutes = require("./routes/authRoutes_Teacher");
 const gradeRoutes = require("./routes/gradeRoutes");
 const classRoutes = require("./routes/classRoutes");
 const levelRoutes = require("./routes/levelRoutes");
@@ -34,11 +32,9 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 connectDB();
 
-app.use("/api/schooladmin-auth", authRoutes);
+app.use("/api/auth_SchoolBranch", authSchoolBranchRoutes);
 app.use("/api/superadmin-auth", superAdminAuthRoutes);
-app.use("/api/branches", branchRoutes);
 app.use("/api/students", studentRoutes);
-app.use("/api/staff", StaffRoutes);
 app.use("/api/grade", gradeRoutes);
 app.use("/api/class", classRoutes);
 app.use("/api/level", levelRoutes);
