@@ -1,6 +1,6 @@
 const AcademicYear = require("../models/AcademicYearModel");
 const Branch = require("../models/branchModel");
-const School = require("../models/authModel_SchoolAdmin");
+const School = require("../models/SuperAdmin/authSchoolBranchModel");
 
 exports.createAcademicYear = async (req, res) => {
   try {
