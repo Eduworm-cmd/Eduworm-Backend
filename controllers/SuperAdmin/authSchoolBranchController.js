@@ -155,7 +155,6 @@ const loginUser = async (req, res) => {
 const createSchoolBranch = async (req, res) => {
   try {
     const {
-      BranchId,
       school,
       name,
       displayName,
@@ -224,7 +223,6 @@ const createSchoolBranch = async (req, res) => {
 
     // Create branch
     const newBranch = new SchoolAdmin({
-      BranchId,
       school,
       name,
       displayName,
@@ -267,15 +265,6 @@ const createSchoolBranch = async (req, res) => {
     });
   } catch (error) {
     console.error("Branch creation error:", error);
-
-    if (error.code === 11000) {
-      const fieldName = Object.keys(error.keyValue)[0];
-      return res.status(409).json({
-        error: `Duplicate value for ${fieldName}`,
-        details: `The ${fieldName} value already exists in the database.`
-      });
-    }
-
     return res.status(500).json({
       error: "Failed to create branch",
       details: error.message,
@@ -536,20 +525,20 @@ const getSchoolById = async (req, res) => {
       });
     }
 
-    const school = await schoolModel.findById(schoolId)
-      .populate('branches'); // This will populate the branches
+    const branches = await schoolModel.findById(schoolId).select("name _id");
+      
 
-    if (!school) {
+    if (!branches) {
       return res.status(404).json({
         success: false,
-        message: "School not found"
+        message: "branches not found"
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "School fetched successfully",
-      data: school
+      message: "branches fetched successfully",
+      data: branches
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
