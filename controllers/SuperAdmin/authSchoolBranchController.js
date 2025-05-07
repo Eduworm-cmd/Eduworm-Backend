@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const SchoolAdmin = require("../../models/SuperAdmin/authSchoolBranchModel");
 const schoolSchema = require("../../models/SuperAdmin/schoolModel")
 const cloudinary = require("../../config/cloudinary");
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 
 
 const generateToken = (userId, role) => {
@@ -205,8 +205,8 @@ const createSchoolBranch = async (req, res) => {
       const uploadSource = isDataUri
         ? branchLogo
         : isUrl
-        ? branchLogo
-        : `data:image/png;base64,${branchLogo}`;
+          ? branchLogo
+          : `data:image/png;base64,${branchLogo}`;
 
       const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
         folder: "Branch Logos",
@@ -510,6 +510,46 @@ const getAllSchools = async (req, res) => {
 };
 
 
+const getallBranches = async (req, res) => {
+  try {
+    let { page = 1, limit = 10, schoolId } = req.query;
+    const skip = (page - 1) * limit;
+
+    let query = {};
+    if (schoolId) {
+      query.school = schoolId;
+    }
+
+    const branches = await SchoolAdmin.find(query)
+      .populate("academicYear", "name startYear endYear")
+      .populate("classes", "className")
+      .populate("school", "schoolName")
+      .sort({ startDate: -1 })
+      .skip(skip)
+      .limit(limit);
+
+
+    if (!branches || branches.length === 0) {
+      return res.status(404).json({ message: "No branches found" });
+    }
+
+    const totalBranches = await SchoolAdmin.countDocuments(query);
+
+    return res.status(200).json({
+      message: "Branches fetched successfully",
+      page,
+      limit,
+      totalBranches,
+      totalPages: Math.ceil(totalBranches / limit), // Corrected calculation
+      data: branches,
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 const getBranchesBySchoolId = async (req, res) => {
   try {
     const { schoolId } = req.params;
@@ -521,6 +561,7 @@ const getBranchesBySchoolId = async (req, res) => {
     }
 
     const branches = await SchoolAdmin.find({ school: schoolId }).select("name _id");
+    console.log(branches);
 
     if (!branches || branches.length === 0) {
       return res.status(404).json({
@@ -537,14 +578,44 @@ const getBranchesBySchoolId = async (req, res) => {
   }
 };
 
+
+const getBranchesById = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(branchId)) {
+      return res.status(400).json({
+        message: "Invalid Branch Id format"
+      });
+    }
+
+    const branch = await SchoolAdmin.findById(branchId);
+
+    if (!branch) {
+      return res.status(404).json({
+        message: "Branch not found"
+      });
+    }
+
+    return res.status(200).json({
+      message: "Branch fetched successfully",
+      data: branch
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
 module.exports = {
   verifyOtp,
   loginUser,
   getAllSchools,
   getFullSchools,
   getBranchesBySchoolId,
+  getallBranches,
   loginBranch,
   createSchoolBranch,
   loginWithEmailPassword,
+  getBranchesById,
   // createSchoolAdminBySuperAdmin
 };

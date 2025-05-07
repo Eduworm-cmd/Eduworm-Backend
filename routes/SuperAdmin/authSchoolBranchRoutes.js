@@ -7,7 +7,9 @@ const {
   createSchoolBranch,
   // createSchoolAdminBySuperAdmin,
   loginWithEmailPassword,
-  getBranchesBySchoolId
+  getBranchesById,
+  getBranchesBySchoolId,
+  getallBranches
 } = require("../../controllers/SuperAdmin/authSchoolBranchController");
 
 const router = express.Router();
@@ -19,8 +21,9 @@ router.post("/verify", verifyOtp);
 router.post("/login-branch", loginBranch);
 router.post("/create_SchoolBranch", createSchoolBranch);
 router.post("/login", loginUser);
+router.get("/allBranches", getallBranches)
 router.get("/:schoolId",getBranchesBySchoolId)
 router.post("/login-email", loginWithEmailPassword); 
-
+router.get("/branches/:branchId", getBranchesById);
 
 module.exports = router;

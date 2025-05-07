@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const schoolModel = require("../../models/SuperAdmin/schoolModel");
 
 class SchoolController {
@@ -38,7 +39,7 @@ class SchoolController {
           res.status(500).json({ message: error.message });
         }
     };
-      
+
     getAllSchool = async(req, res) =>{
         try {
             let {page = 1, limit=10} = req.query;
@@ -86,6 +87,27 @@ class SchoolController {
             console.log(error.message);
             res.status(500).json({message:error.message});
         }
+    }
+
+    getSchoolById = async(req,res) =>{
+      try{
+        const {schoolId} = req.params;
+        
+        if(!schoolId){
+          return res.status(400).json({message:"School Id ir required !"})
+        }
+        if(!mongoose.Types.ObjectId.isValid(schoolId)){
+          return res.status.json({message: "Invalid School Id !"});
+        }
+
+        const school = await schoolModel.findById(schoolId);
+
+        res.status(201).json({message: "School Data Featch Successfully !", school});
+
+      }catch(error){
+        console.log(error.message);
+        res.status(500).json({message:error.message});
+      }
     }
 }
 
