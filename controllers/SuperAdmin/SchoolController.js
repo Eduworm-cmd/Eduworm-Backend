@@ -37,9 +37,8 @@ class SchoolController {
           console.log(error);
           res.status(500).json({ message: error.message });
         }
-      };
+    };
       
-
     getAllSchool = async(req, res) =>{
         try {
             let {page = 1, limit=10} = req.query;
