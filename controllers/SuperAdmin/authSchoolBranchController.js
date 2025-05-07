@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const SchoolAdmin = require("../../models/SuperAdmin/authSchoolBranchModel");
 const cloudinary = require("../../config/cloudinary");
 const { default: mongoose } = require("mongoose");
+const schoolModel = require("../../models/SuperAdmin/schoolModel");
 
 
 const generateToken = (userId, role) => {
@@ -154,7 +155,7 @@ const loginUser = async (req, res) => {
 const createSchoolBranch = async (req, res) => {
   try {
     const {
-      BranchId,  // Added this to match what's being passed
+      BranchId,
       school,
       name,
       displayName,
@@ -174,32 +175,40 @@ const createSchoolBranch = async (req, res) => {
       isActive,
     } = req.body;
 
-    // ✅ Contact validation - more thorough validation
-    if (!contact || typeof contact !== 'object') {
+    // Validate school ID
+    if (!school || typeof school !== "string") {
+      return res.status(400).json({ error: "Valid school ID is required." });
+    }
+
+    // Validate contact object
+    if (!contact || typeof contact !== "object") {
       return res.status(400).json({ error: "Contact information is required." });
     }
 
-    if (!contact.email || typeof contact.email !== 'string' || !contact.email.trim()) {
+    const email = contact.email?.trim();
+    const phone = contact.phone?.trim();
+
+    if (!email) {
       return res.status(400).json({ error: "Valid email is required." });
     }
 
-    if (!contact.phone || typeof contact.phone !== 'string' || !contact.phone.trim()) {
+    if (!phone) {
       return res.status(400).json({ error: "Valid phone number is required." });
     }
 
-    // ✅ Check if email already exists
-    const existingEmail = await SchoolAdmin.findOne({ "contact.email": contact.email.trim() });
-    if (existingEmail) {
-      return res.status(409).json({ error: "Email already in use" });
+    // Check for duplicate email or phone
+    const existingUser = await SchoolAdmin.findOne({
+      $or: [
+        { "contact.email": email },
+        { "contact.phone": phone }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: "Email or phone already in use." });
     }
 
-    // ✅ Check if phone already exists
-    const existingPhone = await SchoolAdmin.findOne({ "contact.phone": contact.phone.trim() });
-    if (existingPhone) {
-      return res.status(409).json({ error: "Phone number already in use" });
-    }
-
-    // ✅ Ensure BranchId is unique
+    // Check for duplicate BranchId
     if (BranchId) {
       const existingBranch = await SchoolAdmin.findOne({ BranchId });
       if (existingBranch) {
@@ -207,18 +216,22 @@ const createSchoolBranch = async (req, res) => {
       }
     }
 
-    console.log("Creating branch...", req.body);
+    // Check if school exists
+    const schoolExists = await schoolModel.findById(school);
+    if (!schoolExists) {
+      return res.status(404).json({ error: "School not found." });
+    }
 
-    // ✅ Create new school branch
+    // Create branch
     const newBranch = new SchoolAdmin({
-      BranchId,  // Include this in the creation
+      BranchId,
       school,
       name,
       displayName,
       location,
       contact: {
-        email: contact.email.trim(),
-        phone: contact.phone.trim()
+        email,
+        phone
       },
       affiliation_board,
       total_Students,
@@ -235,10 +248,15 @@ const createSchoolBranch = async (req, res) => {
     });
 
     const savedBranch = await newBranch.save();
-    school.branches.push(savedBranch._id);
-    await school.save();
 
-    res.status(201).json({
+    // Add branch to school's branch list
+    await schoolModel.findByIdAndUpdate(
+      school,
+      { $push: { branches: savedBranch._id } },
+      { new: true }
+    );
+
+    return res.status(201).json({
       message: "Branch created successfully",
       branch: {
         id: savedBranch._id,
@@ -250,7 +268,6 @@ const createSchoolBranch = async (req, res) => {
   } catch (error) {
     console.error("Branch creation error:", error);
 
-    // More descriptive error messages
     if (error.code === 11000) {
       const fieldName = Object.keys(error.keyValue)[0];
       return res.status(409).json({
@@ -259,13 +276,12 @@ const createSchoolBranch = async (req, res) => {
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "Failed to create branch",
       details: error.message,
     });
   }
 };
-
 
 
 
@@ -509,35 +525,36 @@ const getAllSchools = async (req, res) => {
 
 
 const getSchoolById = async (req, res) => {
+  console.log(req.params);
   try {
     const { schoolId } = req.params;
-        
+
     if (!mongoose.Types.ObjectId.isValid(schoolId)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid School Id format" 
+      return res.status(400).json({
+        success: false,
+        message: "Invalid School Id format"
       });
     }
-    
-    const school = await SchoolAdmin.findById(schoolId);
-    
+
+    const school = await schoolModel.findById(schoolId)
+      .populate('branches'); // This will populate the branches
+
     if (!school) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "School not found"   
+      return res.status(404).json({
+        success: false,
+        message: "School not found"
       });
     }
-    
-    return res.status(200).json({ 
-      success: true, 
-      message: "School fetched successfully", 
-      data: school 
+
+    return res.status(200).json({
+      success: true,
+      message: "School fetched successfully",
+      data: school
     });
   } catch (error) {
-    res.status(400).json({message: error.message});
+    res.status(500).json({ message: error.message });
   }
 };
-
 
 
 
