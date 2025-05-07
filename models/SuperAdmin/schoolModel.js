@@ -29,7 +29,7 @@ const schoolSchema = new mongoose.Schema({
   branches: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Branch',
+      ref: 'SchoolAdmin',
     },
   ],
   isActive: {
