@@ -192,7 +192,21 @@ const createSchoolBranch = async (req, res) => {
       return res.status(409).json({ error: "Phone number already in use" });
     }
 
-    console.log("Creating branch...", req.body);
+    let branchLogotoCouldnary = "";
+
+    try {
+      const uploadResponse = await cloudinary.uploader.upload(
+        `data:image/png;base64,${branchLogo}`,
+        { folder: "Branch Logos" }
+      );
+      
+      branchLogotoCouldnary =  uploadResponse.secure_url;
+
+    } catch (uploadError) {
+      return res.status(500).json({
+        message: "Logo upload failed: " + uploadError.message
+      });
+    }
 
     const newBranch = new SchoolAdmin({
       school,
@@ -208,7 +222,7 @@ const createSchoolBranch = async (req, res) => {
       total_Teachers,
       total_Staff,
       branchPassword,
-      branchLogo,
+      branchLogotoCouldnary,
       fees,
       startDate,
       endDate,
@@ -506,12 +520,6 @@ const getBranchesBySchoolId = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
-
-
-
-
 
 module.exports = {
   verifyOtp,
