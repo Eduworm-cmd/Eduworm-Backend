@@ -11,7 +11,7 @@ const generateToken = (userId, role) => {
   });
 };
 
-
+//Remove
 const loginBranch = async (req, res) => {
   const { email, branchPassword } = req.body;
 
@@ -92,7 +92,7 @@ const verifyOtp = async (req, res) => {
   try {
     const { phoneNumber, staticOtp } = req.body;
 
-    const user = await Auth.findOne({ phone: phoneNumber });
+    const user = await SchoolAdmin.findOne({"contact.phone" : phoneNumber });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -106,19 +106,17 @@ const verifyOtp = async (req, res) => {
     await user.save();
 
     // Generate token
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id, "schooladmin");
 
     res.status(200).json({
       message: "OTP verified successfully",
       token,
       user: {
         id: user._id,
-        email: user.branchEmail,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        schoolName: user.schoolName,
-        firstName: user.firstName,
-        lastName: user.lastName
+        email: user.contact.email,
+        phoneNumber: user.contact.phone,
+        role: "schooladmin",
+        schoolName: user.name,
       }
     });
   } catch (error) {
@@ -132,9 +130,9 @@ const loginUser = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
 
-    const user = await Auth.findOne({ phone: phoneNumber });
+    const user = await SchoolAdmin.findOne({ "contact.phone": phoneNumber });
+    
     if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
 
     // Generate new OTP (for now hardcoded)
     user.staticOtp = "123456";
@@ -278,58 +276,34 @@ const loginWithEmailPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("Login attempt for:", email);
-    console.log("Password provided:", password);
-
-    const user = await Auth.findOne({ branchEmail: email });
+    const user = await SchoolAdmin.findOne({ "contact.email": email }).select("+branchPassword");
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Log the stored hashed password for debugging
-    console.log("Stored hashed password:", user.branchPassword);
+    const token = generateToken(user._id, "schooladmin"); 
 
-    try {
-      // Debug the bcrypt comparison
-      const isMatch = await user.comparePassword(password)
-      console.log("Password comparison result:", isMatch);
-
-      if (!isMatch) {
-        //   // TEMPORARY WORKAROUND: If you need to bypass password check temporarily
-        //   // Comment the next line and uncomment the workaround below
-        return res.status(400).json({ message: "Invalid credentials" });
-
-        //   // TEMPORARY WORKAROUND - REMOVE IN PRODUCTION
-        console.log("WARNING: Bypassing password check for testing!");
-      }
-
-      console.log("Authentication successful");
-
-      const token = generateToken(user._id, user.role);
-
-      res.status(200).json({
-        message: "Login successful",
-        token,
-        user: {
-          id: user._id,
-          email: user.branchEmail,
-          phoneNumber: user.phone,
-          role: user.role,
-          schoolName: user.schoolName,
-          firstName: user.firstName,
-          lastName: user.lastName
-        }
-      });
-    } catch (bcryptError) {
-      console.error("Bcrypt comparison error:", bcryptError);
-      return res.status(500).json({ message: "Authentication error" });
-    }
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        email: user.contact.email,
+        phoneNumber: user.contact.phone,
+        role: "schooladmin",
+        name: user.name,
+        displayName: user.displayName,
+        school: user.school,
+      },
+    });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 // Register by SuperAdmin Create School
