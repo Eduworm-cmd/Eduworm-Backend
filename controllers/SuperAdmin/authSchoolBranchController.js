@@ -1,8 +1,8 @@
 const jwt = require("jsonwebtoken");
 const SchoolAdmin = require("../../models/SuperAdmin/authSchoolBranchModel");
+const schoolSchema = require("../../models/SuperAdmin/schoolModel")
 const cloudinary = require("../../config/cloudinary");
 const { default: mongoose } = require("mongoose");
-const schoolModel = require("../../models/SuperAdmin/schoolModel");
 
 
 const generateToken = (userId, role) => {
@@ -12,30 +12,28 @@ const generateToken = (userId, role) => {
 };
 
 
-const loginBranch = async (req, res)=>{
+const loginBranch = async (req, res) => {
   const { email, branchPassword } = req.body;
 
   try {
-    const existBranch = await SchoolAdmin.findOne({"contact.email": email}).select("+branchPassword");
-    if(!existBranch)
-    {
+    const existBranch = await SchoolAdmin.findOne({ "contact.email": email }).select("+branchPassword");
+    if (!existBranch) {
       return res.status(400).json({ message: 'Branch not found' });
     }
- const isMatch = await existBranch.comparePassword(branchPassword);
- if(!isMatch)
- {
-  return res.status(400).json({ message: 'Invalid credentials' });
- }
+    const isMatch = await existBranch.comparePassword(branchPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
 
- const token = jwt.sign({
-  id: existBranch._id,
-  name: existBranch.name,
-  school: existBranch.school,
- },
- process.env.JWT_SECRET,
- {
-  expiresIn: "1d",
- })
+    const token = jwt.sign({
+      id: existBranch._id,
+      name: existBranch.name,
+      school: existBranch.school,
+    },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      })
 
     res.status(200).json({
       message: "Login successful",
@@ -51,12 +49,10 @@ const loginBranch = async (req, res)=>{
     });
 
   } catch (error) {
-    console.error(error,"Login error");
+    console.error(error, "Login error");
     res.status(500).json({ message: error.message });
   }
 }
-
-
 
 
 
@@ -174,62 +170,38 @@ const createSchoolBranch = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Validate school ID
-    if (!school || typeof school !== "string") {
-      return res.status(400).json({ error: "Valid school ID is required." });
-    }
-
-    // Validate contact object
-    if (!contact || typeof contact !== "object") {
+    if (!contact || typeof contact !== 'object') {
       return res.status(400).json({ error: "Contact information is required." });
     }
 
-    const email = contact.email?.trim();
-    const phone = contact.phone?.trim();
-
-    if (!email) {
+    if (!contact.email || typeof contact.email !== 'string' || !contact.email.trim()) {
       return res.status(400).json({ error: "Valid email is required." });
     }
 
-    if (!phone) {
+    if (!contact.phone || typeof contact.phone !== 'string' || !contact.phone.trim()) {
       return res.status(400).json({ error: "Valid phone number is required." });
     }
 
-    // Check for duplicate email or phone
-    const existingUser = await SchoolAdmin.findOne({
-      $or: [
-        { "contact.email": email },
-        { "contact.phone": phone }
-      ]
-    });
-
-    if (existingUser) {
-      return res.status(409).json({ error: "Email or phone already in use." });
+    const existingEmail = await SchoolAdmin.findOne({ "contact.email": contact.email.trim() });
+    if (existingEmail) {
+      return res.status(409).json({ error: "Email already in use" });
     }
 
-    // Check for duplicate BranchId
-    if (BranchId) {
-      const existingBranch = await SchoolAdmin.findOne({ BranchId });
-      if (existingBranch) {
-        return res.status(409).json({ error: "Branch ID already exists" });
-      }
+    const existingPhone = await SchoolAdmin.findOne({ "contact.phone": contact.phone.trim() });
+    if (existingPhone) {
+      return res.status(409).json({ error: "Phone number already in use" });
     }
 
-    // Check if school exists
-    const schoolExists = await schoolModel.findById(school);
-    if (!schoolExists) {
-      return res.status(404).json({ error: "School not found." });
-    }
+    console.log("Creating branch...", req.body);
 
-    // Create branch
     const newBranch = new SchoolAdmin({
       school,
       name,
       displayName,
       location,
       contact: {
-        email,
-        phone
+        email: contact.email.trim(),
+        phone: contact.phone.trim()
       },
       affiliation_board,
       total_Students,
@@ -247,33 +219,28 @@ const createSchoolBranch = async (req, res) => {
 
     const savedBranch = await newBranch.save();
 
-    // Add branch to school's branch list
-    await schoolModel.findByIdAndUpdate(
-      school,
-      { $push: { branches: savedBranch._id } },
-      { new: true }
-    );
+    const schoolDoc = await schoolSchema.findById(school);
+    if (!schoolDoc) {
+      return res.status(404).json({ error: "School not found." });
+    }
 
-    return res.status(201).json({
+    schoolDoc.branches.push(savedBranch._id);
+    await schoolDoc.save();
+
+
+    res.status(201).json({
       message: "Branch created successfully",
       branch: {
         id: savedBranch._id,
-        BranchId: savedBranch.BranchId,
         name: savedBranch.name,
         displayName: savedBranch.displayName
       }
     });
   } catch (error) {
-    console.error("Branch creation error:", error);
-    return res.status(500).json({
-      error: "Failed to create branch",
-      details: error.message,
-    });
+    console.error(error.message);
+    res.status(500).json({ error: error.message });
   }
 };
-
-
-
 
 
 // Controller function for login
@@ -282,12 +249,12 @@ const loginWithEmailPassword = async (req, res) => {
     const { email, password } = req.body;
 
     console.log("Login attempt for:", email);
-    console.log("Password provided:", password); 
+    console.log("Password provided:", password);
 
     const user = await Auth.findOne({ branchEmail: email });
 
     if (!user) return res.status(404).json({ message: "User not found" });
-   
+
     if (!user.isVerified) return res.status(403).json({ message: "User not verified" });
 
     // Log the stored hashed password for debugging
@@ -299,11 +266,11 @@ const loginWithEmailPassword = async (req, res) => {
       console.log("Password comparison result:", isMatch);
 
       if (!isMatch) {
-      //   // TEMPORARY WORKAROUND: If you need to bypass password check temporarily
-      //   // Comment the next line and uncomment the workaround below
+        //   // TEMPORARY WORKAROUND: If you need to bypass password check temporarily
+        //   // Comment the next line and uncomment the workaround below
         return res.status(400).json({ message: "Invalid credentials" });
 
-      //   // TEMPORARY WORKAROUND - REMOVE IN PRODUCTION
+        //   // TEMPORARY WORKAROUND - REMOVE IN PRODUCTION
         console.log("WARNING: Bypassing password check for testing!");
       }
 
@@ -317,7 +284,7 @@ const loginWithEmailPassword = async (req, res) => {
         user: {
           id: user._id,
           email: user.branchEmail,
-          phoneNumber: user.phone, 
+          phoneNumber: user.phone,
           role: user.role,
           schoolName: user.schoolName,
           firstName: user.firstName,
@@ -513,31 +480,26 @@ const getAllSchools = async (req, res) => {
 };
 
 
-const getSchoolById = async (req, res) => {
-  console.log(req.params);
+const getBranchesBySchoolId = async (req, res) => {
   try {
     const { schoolId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(schoolId)) {
       return res.status(400).json({
-        success: false,
         message: "Invalid School Id format"
       });
     }
 
-    const branches = await schoolModel.findById(schoolId).select("name _id");
-      
+    const branches = await SchoolAdmin.find({ school: schoolId }).select("name _id");
 
-    if (!branches) {
+    if (!branches || branches.length === 0) {
       return res.status(404).json({
-        success: false,
-        message: "branches not found"
+        message: "No branches found for this school"
       });
     }
 
     return res.status(200).json({
-      success: true,
-      message: "branches fetched successfully",
+      message: "Branches fetched successfully",
       data: branches
     });
   } catch (error) {
@@ -549,12 +511,14 @@ const getSchoolById = async (req, res) => {
 
 
 
+
+
 module.exports = {
   verifyOtp,
   loginUser,
   getAllSchools,
   getFullSchools,
-  getSchoolById,
+  getBranchesBySchoolId,
   loginBranch,
   createSchoolBranch,
   loginWithEmailPassword,

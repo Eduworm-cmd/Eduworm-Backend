@@ -45,10 +45,6 @@ const authSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Create compound indexes for email and phone
-authSchema.index({ "contact.email": 1 }, { unique: true });
-authSchema.index({ "contact.phone": 1 }, { unique: true });
-
 // 🔐 Password hashing
 authSchema.pre("save", async function (next) {
   if (!this.isModified("branchPassword")) return next();
