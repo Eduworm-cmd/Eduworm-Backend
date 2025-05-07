@@ -14,6 +14,11 @@ const authSchema = new mongoose.Schema(
       country: { type: String, required: true },
       pincode: { type: String, required: true },
     },
+    isVerified:{type:Boolean,default:false},
+    staticOtp:{
+       type:String,
+       default:"123456",
+    },
     contact: {
       email: { type: String, required: true },
       phone: { type: String, required: true },
