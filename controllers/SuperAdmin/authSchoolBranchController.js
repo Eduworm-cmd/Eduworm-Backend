@@ -170,18 +170,18 @@ const createSchoolBranch = async (req, res) => {
       isActive,
     } = req.body;
 
+    // Basic validations
     if (!contact || typeof contact !== 'object') {
       return res.status(400).json({ error: "Contact information is required." });
     }
-
     if (!contact.email || typeof contact.email !== 'string' || !contact.email.trim()) {
       return res.status(400).json({ error: "Valid email is required." });
     }
-
     if (!contact.phone || typeof contact.phone !== 'string' || !contact.phone.trim()) {
       return res.status(400).json({ error: "Valid phone number is required." });
     }
 
+    // Check duplicates
     const existingEmail = await SchoolAdmin.findOne({ "contact.email": contact.email.trim() });
     if (existingEmail) {
       return res.status(409).json({ error: "Email already in use" });
@@ -192,22 +192,36 @@ const createSchoolBranch = async (req, res) => {
       return res.status(409).json({ error: "Phone number already in use" });
     }
 
-    let branchLogotoCouldnary = "";
-
+    // Handle logo upload (base64, data URI, or URL)
+    let branchLogoUrl = "";
     try {
-      const uploadResponse = await cloudinary.uploader.upload(
-        `data:image/png;base64,${branchLogo}`,
-        { folder: "Branch Logos" }
-      );
-      
-      branchLogotoCouldnary =  uploadResponse.secure_url;
+      if (!branchLogo || branchLogo.length < 50) {
+        throw new Error("Invalid or missing logo image data");
+      }
 
+      const isDataUri = branchLogo.startsWith("data:image/");
+      const isUrl = branchLogo.startsWith("http");
+
+      const uploadSource = isDataUri
+        ? branchLogo
+        : isUrl
+        ? branchLogo
+        : `data:image/png;base64,${branchLogo}`;
+
+      const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
+        folder: "Branch Logos",
+      });
+
+      branchLogoUrl = uploadResponse.secure_url;
     } catch (uploadError) {
+      console.error("Cloudinary upload error:", JSON.stringify(uploadError, null, 2));
       return res.status(500).json({
-        message: "Logo upload failed: " + uploadError.message
+        message: "Logo upload failed",
+        details: uploadError?.message || uploadError?.error?.message || "Unknown error"
       });
     }
 
+    // Create new branch
     const newBranch = new SchoolAdmin({
       school,
       name,
@@ -215,14 +229,14 @@ const createSchoolBranch = async (req, res) => {
       location,
       contact: {
         email: contact.email.trim(),
-        phone: contact.phone.trim()
+        phone: contact.phone.trim(),
       },
       affiliation_board,
       total_Students,
       total_Teachers,
       total_Staff,
       branchPassword,
-      branchLogotoCouldnary,
+      branchLogo: branchLogoUrl,
       fees,
       startDate,
       endDate,
@@ -233,6 +247,7 @@ const createSchoolBranch = async (req, res) => {
 
     const savedBranch = await newBranch.save();
 
+    // Add branch ID to school
     const schoolDoc = await schoolSchema.findById(school);
     if (!schoolDoc) {
       return res.status(404).json({ error: "School not found." });
@@ -241,20 +256,21 @@ const createSchoolBranch = async (req, res) => {
     schoolDoc.branches.push(savedBranch._id);
     await schoolDoc.save();
 
-
     res.status(201).json({
       message: "Branch created successfully",
       branch: {
         id: savedBranch._id,
         name: savedBranch.name,
-        displayName: savedBranch.displayName
+        displayName: savedBranch.displayName,
+        logoUrl: savedBranch.branchLogo
       }
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("Error creating branch:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
+
 
 
 // Controller function for login
