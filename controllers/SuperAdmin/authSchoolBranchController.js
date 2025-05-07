@@ -589,7 +589,9 @@ const getBranchesById = async (req, res) => {
       });
     }
 
-    const branch = await SchoolAdmin.findById(branchId);
+    const branch = await SchoolAdmin.findById(branchId)
+      .populate("school", "_id name"); // ⬅️ Only populating necessary fields
+    
 
     if (!branch) {
       return res.status(404).json({
