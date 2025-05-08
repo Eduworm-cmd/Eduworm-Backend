@@ -9,5 +9,11 @@ const studentSchema = new mongoose.Schema({
         type:String,
         require:[true]
     },
-    s
+    role:{
+        type:String,
+        default:"stundent"
+    }
 })
+
+
+module.exports = mongoose.Schema('Student',studentSchema);
