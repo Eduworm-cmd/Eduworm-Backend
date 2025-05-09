@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-// Define the parent schema as a sub-document
 const parentSchema = new mongoose.Schema({
   firstName: { type: String },
   lastName: { type: String },
@@ -8,8 +7,14 @@ const parentSchema = new mongoose.Schema({
   phoneNumber: { type: String },
   email: { type: String },
   currentAddress: { type: String },
-  photo: { type: String } // URL of the uploaded image from Cloudinary
+  photo: { type: String }
 });
+
+
+
+
+
+
 
 // Define the student schema
 const studentSchema = new mongoose.Schema({
@@ -20,29 +25,36 @@ const studentSchema = new mongoose.Schema({
   gender: { type: String },
   
   // School Information
-  school: { type: String, ref: "Branch" },
+  school: { type: String, ref: "School" },
+  schoolBranch: { type: String, ref: "SchoolAdmin" },
   rollNo: { type: String },
   admissionNumber: { type: String },
   dateOfJoining: { type: Date },
   bloodGroup: { type: String },
   enrollmentStatus: { type: String },
   uniqueId: { type: String },
-  photo: { type: String }, // URL of the uploaded image from Cloudinary
+  photo: { type: String },
+
+
+  //personal documants
+documents: {
+  transferCertificate: { type: String },
+  aadharCard: { type: String },
+  studentIDCard: { type: String },
+},
+
+emergencyContact: {
+  name: { type: String },
+  relation: { type: String },
+  phone: { type: String },
+}
+,
   
-  // Current Class Information
   currentClass: {
-    academicYear: { type: String }, // e.g., "AY 2024-2025"
-    grade: { type: String }, // e.g., "KG-2"
-    section: { type: String } // e.g., "MG-2"
+    class: {type:mongoose.Schema.Types.ObjectId,ref:"Class"},
+    academicYear: { type: String }, 
   },
-  
-  // Family Information
   parents: [parentSchema],
-  
-  // Branch reference
-  branch: { type: String, ref: "Branch" },
-  
-  // Account status
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -52,5 +64,9 @@ studentSchema.index({ rollNo: 1 });
 studentSchema.index({ admissionNumber: 1 });
 studentSchema.index({ branch: 1 });
 studentSchema.index({ isActive: 1 });
+
+
+
+
 
 module.exports = mongoose.model("Student", studentSchema);

@@ -1,5 +1,5 @@
 const Branch = require("../models/branchModel");
-const SchoolAdmin = require("../models/authModel_SchoolAdmin");
+const SchoolAdmin = require("../models/SuperAdmin/authSchoolBranchModel");
 const cloudinary = require("../config/cloudinary");
 const { default: mongoose } = require("mongoose");
 
