@@ -1,113 +1,110 @@
 const cloudinary = require("../config/cloudinary");
 const mongoose = require("mongoose");
 const studentModel = require("../models/studentModel");
+const SchoolAdmin = require("../models/SuperAdmin/authSchoolBranchModel");
 
 // Helper function to upload base64 image to Cloudinary
 const uploadBase64ToCloudinary = async (base64Data) => {
   try {
     if (!base64Data) return null;
-    
+
     // Upload to Cloudinary directly from base64
     const result = await cloudinary.uploader.upload(base64Data, {
       folder: "student_photos",
       use_filename: true,
       unique_filename: true
     });
-    
+
     return result.secure_url;
   } catch (error) {
     console.error("Error uploading to Cloudinary:", error);
+
+    if (error.response) {
+      console.error("Cloudinary Error Response:", error.response.body);
+    }
+
     throw new Error("Image upload failed");
   }
 };
 
+
 const studentController = {
-  // Create a new student
+
   createStudent: async (req, res) => {
     try {
-      const {
-        firstName, lastName, dateOfBirth, gender, 
-        school, rollNo, admissionNumber, dateOfJoining, 
-        bloodGroup, enrollmentStatus, uniqueId,
-        currentClass, photo
-      } = req.body;
-      
-      // Parse JSON strings if they come as strings
-      let parsedCurrentClass = currentClass;
-      if (typeof currentClass === 'string') {
-        parsedCurrentClass = JSON.parse(currentClass);
+      console.log("Full User Object:", req.user);
+
+      // ✅ Get user info
+      const userRole = req.user?.role;
+      const userId = req.user?._id;
+
+      if (!userRole || !userId) {
+        return res.status(403).json({ message: "Invalid user credentials" });
       }
-      
-      let parents = [];
-      if (req.body.parents) {
-        // If parents come as a JSON string
-        if (typeof req.body.parents === 'string') {
-          parents = JSON.parse(req.body.parents);
-        } 
-        // If parents come as array already
-        else if (Array.isArray(req.body.parents)) {
-          parents = req.body.parents;
+
+      // 📍 School & Branch Assignment Logic
+      let assignedSchool, assignedBranch;
+
+      if (userRole === "superadmin") {
+        // SuperAdmin must explicitly provide school/branch
+        assignedSchool = req.body.school;
+        assignedBranch = req.body.schoolBranch;
+        assignedclass = req.body.currentClass.class;
+
+        if (!assignedSchool || !assignedBranch ||!assignedclass) {
+          return res.status(400).json({
+            message: "SuperAdmin must provide school and branch IDs and class"
+          });
         }
       }
-      
-      // Handle student photo upload (base64)
-      let studentPhotoUrl = null;
-      if (photo) {
-        studentPhotoUrl = await uploadBase64ToCloudinary(photo);
-      }
-      
-      // Handle parent photos upload (base64)
-      const processedParents = [];
-      for (let i = 0; i < parents.length; i++) {
-        const parent = typeof parents[i] === 'string' ? JSON.parse(parents[i]) : parents[i];
-        let parentPhotoUrl = null;
-        
-        // Check if there's a photo for this parent
-        const parentPhotoKey = `parentPhoto${i}`;
-        if (req.body[parentPhotoKey]) {
-          parentPhotoUrl = await uploadBase64ToCloudinary(req.body[parentPhotoKey]);
+      else if (userRole === "schooladmin") {
+        // SchoolAdmin gets from their own record
+        assignedSchool = req.user.school; // From middleware
+        assignedBranch = userId; // SchoolAdmin ID = Branch ID
+        assignedClass = req.body.classes;
+
+        if (!assignedBranch || !assignedClass) {
+          return res.status(400).json({
+            message: "SchoolAdmin must provide branch ID and class"
+          });
         }
-        
-        processedParents.push({
-          ...parent,
-          photo: parentPhotoUrl
-        });
       }
-      
+
+
+
+      // ... (rest of your existing code)
+
+      // ✅ Create student
       const student = new studentModel({
-        firstName,
-        lastName,
-        dateOfBirth,
-        gender,
-        school,
-        rollNo,
-        admissionNumber,
-        dateOfJoining,
-        bloodGroup,
-        enrollmentStatus,
-        uniqueId,
-        photo: studentPhotoUrl,
-        currentClass: parsedCurrentClass,
-        parents: processedParents,
-        branch: req.body.branch, // Branch ID from authenticated session
-        isActive: true // Default to active when creating
+        // ... other fields
+        ...req.body,
+        school: assignedSchool,
+        schoolBranch: assignedBranch,
+        createdBy: {
+          userId: userId,
+          role: userRole
+        }
       });
-      
+
       await student.save();
-      
-      // Update Branch model to add this student
-      const Branch = require("../models/branchModel");
-      await Branch.findByIdAndUpdate(
-        req.body.branch,
-        { $push: { students: student._id } }
-      );
-      
+
+      // Update SchoolAdmin only if creator is schooladmin
+      if (userRole === "schooladmin") {
+        await SchoolAdmin.findByIdAndUpdate(
+          assignedBranch,
+          { $push: { total_Students: student._id } }
+        );
+      }
+
       res.status(201).json({ success: true, data: student });
+
     } catch (error) {
-      console.error("Error creating student:", error);
+      console.error("Student creation error:", error);
       res.status(500).json({ success: false, message: error.message });
     }
-  },
+  }
+,
+
   
   // Get a single student by ID
   getStudent: async (req, res) => {

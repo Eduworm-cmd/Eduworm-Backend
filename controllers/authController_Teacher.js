@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Staff = require('../models/authModel_Teacher');
 const Branch = require('../models/branchModel');
-const SchoolAdmin = require('../models/authModel_SchoolAdmin');
+const BranchAdmin = require('../models/authModel_SchoolAdmin');
 const cloudinary = require('../config/cloudinary');
 const asyncHandler = require('express-async-handler');
 

@@ -6,10 +6,16 @@ const mongoose = require("mongoose");
 const gradeModel = require("../../models/SuperAdmin/gradeModel");
 
 
-const generateToken = (userId, role) => {
-  return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      _id: user._id,
+      role: user.role,
+      school: user.school || null, // Only added for schooladmin
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN }
+  );
 };
 
 //Remove
@@ -116,7 +122,7 @@ const verifyOtp = async (req, res) => {
         id: user._id,
         email: user.contact.email,
         phoneNumber: user.contact.phone,
-        role: "schooladmin",
+        role: "branchadmin",
         schoolName: user.name,
       }
     });
@@ -261,7 +267,8 @@ const createSchoolBranch = async (req, res) => {
         id: savedBranch._id,
         name: savedBranch.name,
         displayName: savedBranch.displayName,
-        logoUrl: savedBranch.branchLogo
+        logoUrl: savedBranch.branchLogo,
+        role: savedBranch.role,
       }
     });
   } catch (error) {
@@ -277,31 +284,34 @@ const loginWithEmailPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Find the user based on email, also select the password field
     const user = await SchoolAdmin.findOne({ "contact.email": email }).select("+branchPassword");
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Compare the password entered with the stored password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = generateToken(user._id, "schooladmin");
+    // Generate the token after successful login
+    const token = generateToken(user); // Pass the entire user object to generate the token
 
     res.status(200).json({
       message: "Login successful",
       token,
       user: {
-        id: user._id,
-        email: user.contact.email,
-        phoneNumber: user.contact.phone,
-        role: "schooladmin",
-        name: user.name,
-        displayName: user.displayName,
-        school: user.school,
+        id: user._id,            // Returning the user ID
+        email: user.contact.email, // Returning the email
+        phoneNumber: user.contact.phone, // Returning the phone number
+        role: "schooladmin",     // Assigning the role
+        name: user.name,         // Returning user name
+        displayName: user.displayName, // Returning display name
+        school: user.school,     // Returning the school info
       },
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message }); // Handle any errors
   }
 };
 

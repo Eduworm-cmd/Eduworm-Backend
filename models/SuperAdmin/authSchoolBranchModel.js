@@ -14,13 +14,18 @@ const authSchema = new mongoose.Schema(
       country: { type: String, required: true },
       pincode: { type: String, required: true },
     },
+    role: {
+      type: String,
+      enum: ["schooladmin"],
+      default: "schooladmin",
+    },
     isVerified:{type:Boolean,default:false},
     staticOtp:{
        type:String,
        default:"123456",
     },
     contact: {
-      email: { type: String, required: true },
+      email: { type: String, required: true, lowercase: true },
       phone: { type: String, required: true },
     },
     affiliation_board: {
