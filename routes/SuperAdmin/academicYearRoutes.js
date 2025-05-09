@@ -4,7 +4,7 @@ const router = express.Router();
 
 
 router.post('/createAcademicYear', AcademicYearController.createAcademicYear);
-router.get('/academicYear', AcademicYearController.getAcademicYearDropdown);
+router.get('/dropdown', AcademicYearController.getAcademicYearDropdown);
 router.get('/AllAcademicYear', AcademicYearController.getAllAcademicYear);
 
 module.exports = router;

@@ -6,8 +6,7 @@ const connectDB = require("./config/db");
 const authSchoolBranchRoutes = require("./routes/SuperAdmin/authSchoolBranchRoutes");
 const superAdminAuthRoutes = require("./routes/authRoutes_SuperAdmin");
 const studentRoutes = require("./routes/studentRoutes");
-const gradeRoutes = require("./routes/gradeRoutes");
-const classRoutes = require("./routes/classRoutes");
+const gradeRoutes = require("./routes/SuperAdmin/gradeRoutes");
 const levelRoutes = require("./routes/levelRoutes");
 const contentRoutes = require("./routes/contentRoutes");
 const playlistRoutes = require("./routes/playListRoutes");
@@ -15,6 +14,7 @@ const playlistRoutes = require("./routes/playListRoutes");
 const SA_StaffRoutes = require('./routes/SuperAdmin/staffRoutes');
 const academicYearRoutes = require('./routes/SuperAdmin/academicYearRoutes');
 const schoolRoutes = require('./routes/SuperAdmin/schoolRoutes');
+const classRoutes = require('./routes/SuperAdmin/classRoutes');
 
 dotenv.config();
 
@@ -36,7 +36,6 @@ app.use("/api/auth_SchoolBranch", authSchoolBranchRoutes);
 app.use("/api/superadmin-auth", superAdminAuthRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/grade", gradeRoutes);
-app.use("/api/class", classRoutes);
 app.use("/api/level", levelRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api", playlistRoutes);
@@ -47,6 +46,7 @@ app.use("/api", playlistRoutes);
 app.use('/api/school',schoolRoutes)
 app.use('/api/SA_Staff',SA_StaffRoutes);
 app.use('/api/academicYear',academicYearRoutes);
+app.use("/api/class",classRoutes);
 
 
 const PORT = process.env.PORT || 4000;

@@ -82,7 +82,7 @@ class SchoolController {
                 return res.status(404).json({message:"School Not Found !"})
             }
 
-            return res.status(201).json({message:"School Fetched successfully", data:allSchool});
+            return res.status(201).json({data:allSchool});
         }catch(error){
             console.log(error.message);
             res.status(500).json({message:error.message});

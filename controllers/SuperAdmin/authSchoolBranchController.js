@@ -3,6 +3,7 @@ const SchoolAdmin = require("../../models/SuperAdmin/authSchoolBranchModel");
 const schoolSchema = require("../../models/SuperAdmin/schoolModel")
 const cloudinary = require("../../config/cloudinary");
 const mongoose = require("mongoose");
+const gradeModel = require("../../models/SuperAdmin/gradeModel");
 
 
 const generateToken = (userId, role) => {
@@ -92,7 +93,7 @@ const verifyOtp = async (req, res) => {
   try {
     const { phoneNumber, staticOtp } = req.body;
 
-    const user = await SchoolAdmin.findOne({"contact.phone" : phoneNumber });
+    const user = await SchoolAdmin.findOne({ "contact.phone": phoneNumber });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -131,7 +132,7 @@ const loginUser = async (req, res) => {
     const { phoneNumber } = req.body;
 
     const user = await SchoolAdmin.findOne({ "contact.phone": phoneNumber });
-    
+
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Generate new OTP (for now hardcoded)
@@ -283,7 +284,7 @@ const loginWithEmailPassword = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = generateToken(user._id, "schooladmin"); 
+    const token = generateToken(user._id, "schooladmin");
 
     res.status(200).json({
       message: "Login successful",
@@ -500,8 +501,8 @@ const getallBranches = async (req, res) => {
       .populate("school", "schoolName")
       .sort({ startDate: -1 })
       .skip(skip)
-      .limit(limit);
-
+      .limit(limit)
+      .lean(); // Use lean to modify returned objects directly
 
     if (!branches || branches.length === 0) {
       return res.status(404).json({ message: "No branches found" });
@@ -509,16 +510,34 @@ const getallBranches = async (req, res) => {
 
     const totalBranches = await SchoolAdmin.countDocuments(query);
 
+    for (let branch of branches) {
+      branch.grades = [];
+
+      if (branch.classes && branch.classes.length > 0) {
+        const classIds = branch.classes.map(cls => cls._id);
+
+        const grades = await gradeModel.find({
+          class: { $in: classIds },
+          branch: branch._id
+        })
+          .populate("class", "className")
+          .populate("school", "schoolName")
+          .lean();
+
+        branch.grades = grades;
+      }
+    }
+
     return res.status(200).json({
       message: "Branches fetched successfully",
-      page,
-      limit,
+      page: Number(page),
+      limit: Number(limit),
       totalBranches,
-      totalPages: Math.ceil(totalBranches / limit), // Corrected calculation
+      totalPages: Math.ceil(totalBranches / limit),
       data: branches,
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("Error in getallBranches:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -565,7 +584,7 @@ const getBranchesById = async (req, res) => {
 
     const branch = await SchoolAdmin.findById(branchId)
       .populate("school", "_id name"); // ⬅️ Only populating necessary fields
-    
+
 
     if (!branch) {
       return res.status(404).json({

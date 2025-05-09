@@ -13,6 +13,12 @@ class AcademicYearController {
                 });
             }
 
+            const existingAcademicYear = await academicYearSchema.findOne({ name});
+            if (existingAcademicYear) {
+                return res.status(400).json({ message: `${name} already exists.` });
+            }
+
+
             const start = new Date(startDate);
             const end = new Date(endDate);
 
@@ -54,7 +60,6 @@ class AcademicYearController {
             }
 
             return res.status(201).json({
-                message: "Academic Years fetched successfully!",
                 data: academicYears,
             });
 
@@ -66,39 +71,39 @@ class AcademicYearController {
 
     getAllAcademicYear = async (req, res) => {
         try {
-          let { page = 1, limit = 10 } = req.query;
-                      
-          page = parseInt(page);
-          limit = parseInt(limit);
-          const skip = (page - 1) * limit;
-      
-          const allAcademicYear = await academicYearSchema
-            .find()
-            .sort({ startDate: -1 })
-            .skip(skip)
-            .limit(limit)
-      
-          if (!allAcademicYear || allAcademicYear.length === 0) {
-            return res.status(404).json({ message: "No Academic Year Found!" });
-          }
-      
-          const totalRecords = await academicYearSchema.countDocuments();
-      
-          return res.status(200).json({
-            message: "Academic Years fetched successfully!",
-            page,
-            limit,
-            totalRecords,
-            totalPages: Math.ceil(totalRecords / limit),
-            data: allAcademicYear
-          });
-      
+            let { page = 1, limit = 10 } = req.query;
+
+            page = parseInt(page);
+            limit = parseInt(limit);
+            const skip = (page - 1) * limit;
+
+            const allAcademicYear = await academicYearSchema
+                .find()
+                .sort({ startDate: -1 })
+                .skip(skip)
+                .limit(limit)
+
+            if (!allAcademicYear || allAcademicYear.length === 0) {
+                return res.status(404).json({ message: "No Academic Year Found!" });
+            }
+
+            const totalRecords = await academicYearSchema.countDocuments();
+
+            return res.status(200).json({
+                message: "Academic Years fetched successfully!",
+                page,
+                limit,
+                totalRecords,
+                totalPages: Math.ceil(totalRecords / limit),
+                data: allAcademicYear
+            });
+
         } catch (error) {
-          console.error("Error fetching academic years:", error);
-          return res.status(500).json({ message: error.message });
+            console.error("Error fetching academic years:", error);
+            return res.status(500).json({ message: error.message });
         }
     };
-      
+
 
 }
 
