@@ -294,7 +294,7 @@ const loginWithEmailPassword = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     // Generate the token after successful login
-    const token = generateToken(user); // Pass the entire user object to generate the token
+    const token = generateToken(user); 
 
     res.status(200).json({
       message: "Login successful",
