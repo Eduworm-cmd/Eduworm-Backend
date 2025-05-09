@@ -2,6 +2,8 @@ const cloudinary = require("../config/cloudinary");
 const mongoose = require("mongoose");
 const studentModel = require("../models/studentModel");
 const SchoolAdmin = require("../models/SuperAdmin/authSchoolBranchModel");
+const classController = require("./SuperAdmin/classController");
+const classModel = require("../models/SuperAdmin/classModel");
 
 // Helper function to upload base64 image to Cloudinary
 const uploadBase64ToCloudinary = async (base64Data) => {
@@ -32,7 +34,7 @@ const studentController = {
 
   createStudent: async (req, res) => {
     try {
-      console.log("Full User Object:", req.user);
+      console.log("Full User Object:", req.body);
 
       // ✅ Get user info
       const userRole = req.user?.role;
@@ -43,52 +45,54 @@ const studentController = {
       }
 
       // 📍 School & Branch Assignment Logic
-      let assignedSchool, assignedBranch;
+      let assignedSchool, assignedBranch, assignedClass;
 
       if (userRole === "superadmin") {
-        // SuperAdmin must explicitly provide school/branch
         assignedSchool = req.body.school;
         assignedBranch = req.body.schoolBranch;
-        assignedclass = req.body.currentClass.class;
+        assignedClass = req.body.class;
 
-        if (!assignedSchool || !assignedBranch ||!assignedclass) {
+        if (!assignedSchool || !assignedBranch || !assignedClass) {
           return res.status(400).json({
-            message: "SuperAdmin must provide school and branch IDs and class"
+            message: "SuperAdmin must provide school, branch IDs, and class",
           });
         }
-      }
-      else if (userRole === "schooladmin") {
-        // SchoolAdmin gets from their own record
-        assignedSchool = req.user.school; // From middleware
-        assignedBranch = userId; // SchoolAdmin ID = Branch ID
-        assignedClass = req.body.classes;
+      } else if (userRole === "schooladmin") {
+        assignedSchool = req.user.school;
+        assignedBranch = userId;
+        assignedClass = req.body.class;
 
         if (!assignedBranch || !assignedClass) {
           return res.status(400).json({
-            message: "SchoolAdmin must provide branch ID and class"
+            message: "SchoolAdmin must provide branch ID and class",
           });
         }
       }
 
-
-
-      // ... (rest of your existing code)
+      // ✅ Check if class exists
+      const classExists = await classModel.findById(assignedClass);
+      if (!classExists) {
+        return res.status(404).json({ message: "Class not found!" });
+      }
 
       // ✅ Create student
       const student = new studentModel({
-        // ... other fields
         ...req.body,
         school: assignedSchool,
         schoolBranch: assignedBranch,
         createdBy: {
           userId: userId,
-          role: userRole
-        }
+          role: userRole,
+        },
       });
 
       await student.save();
 
-      // Update SchoolAdmin only if creator is schooladmin
+      // ✅ Add student ID to class
+      classExists.students.push(student._id);
+      await classExists.save();
+
+      // ✅ Update school admin's total students list
       if (userRole === "schooladmin") {
         await SchoolAdmin.findByIdAndUpdate(
           assignedBranch,
@@ -96,13 +100,29 @@ const studentController = {
         );
       }
 
-      res.status(201).json({ success: true, data: student });
+      // ✅ Populate fullName of students in the class
+      const updatedClassWithStudent = await classModel
+        .findById(assignedClass)
+        .populate({
+          path: "students",
+          select: "_id fullName",
+        });
+
+      res.status(201).json({
+        success: true,
+        message: "Student created and added to class successfully!",
+        data: {
+          student,
+          class: updatedClassWithStudent,
+        },
+      });
 
     } catch (error) {
       console.error("Student creation error:", error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
 ,
 
   
