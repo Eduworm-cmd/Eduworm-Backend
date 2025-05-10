@@ -3,6 +3,7 @@ const studentController = require('../../controllers/SuperAdmin/studentControlle
 const router = express();
 
 router.post('/create',studentController.createStudent);
+router.get('/all',studentController.getAllStudent);
 
 
 
