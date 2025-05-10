@@ -109,6 +109,8 @@ class SchoolController {
         res.status(500).json({message:error.message});
       }
     }
+
+    
 }
 
 

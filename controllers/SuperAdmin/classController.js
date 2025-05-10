@@ -231,21 +231,18 @@ class ClassController {
   getCLassesByBranchId = async (req, res) => {
     try {
       const { branchId } = req.params;
-
-      // ✅ Validate ObjectId
+     
       if (!mongoose.Types.ObjectId.isValid(branchId)) {
         return res.status(400).json({
           message: "Invalid Branch Id format"
         });
       }
 
-      // ✅ Find the branch and populate classes
       const branch = await authSchoolBranchModel.findById(branchId).populate({
         path: "classes",
-        select: "className _id type", // Only return necessary fields
+        select: "className _id type", 
       });
 
-      // ✅ Check if branch exists
       if (!branch) {
         return res.status(404).json({
           message: "Branch not found"
@@ -254,7 +251,7 @@ class ClassController {
 
       console.log(branch);
 
-      // ✅ Return classes
+    
       return res.status(200).json({
         message: "Classes fetched successfully",
         data: branch.classes
