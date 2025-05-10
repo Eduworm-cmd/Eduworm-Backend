@@ -593,7 +593,7 @@ const getBranchesById = async (req, res) => {
     }
 
     const branch = await SchoolAdmin.findById(branchId)
-      .populate("school", "_id name"); // ⬅️ Only populating necessary fields
+      .populate("school", "_id name");
 
 
     if (!branch) {
@@ -610,6 +610,9 @@ const getBranchesById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 }
+
+
+
 
 module.exports = {
   verifyOtp,
