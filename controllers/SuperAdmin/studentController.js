@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const authSchoolBranchModel = require("../../models/SuperAdmin/authSchoolBranchModel");
 const classModel = require("../../models/SuperAdmin/classModel");
 const schoolModel = require("../../models/SuperAdmin/schoolModel");
@@ -85,6 +86,51 @@ class StudentController {
             return res.status(500).json({ message: error.message });
         }
     };
+
+
+    getAllStudentByBrachId = async (req, res) => {
+        try {
+            const { branchId } = req.params;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const skip = (page - 1) * limit;
+
+            if (!branchId) {
+                return res.status(400).json({ message: "Branch Id is required!" });
+            }
+
+            if (!mongoose.Types.ObjectId.isValid(branchId)) {
+                return res.status(400).json({ message: "Invalid Branch Id" });
+            }
+
+            const allStudents = await studentModal
+                .find({ schoolBranch: branchId })
+                .sort({ createdAt: -1 }) // fix typo 'createAt'
+                .skip(skip)
+                .limit(limit)
+                .populate('class','className')
+                .populate('schoolBranch', 'name')
+
+            const studentCount = await studentModal.countDocuments({ schoolBranch: branchId });
+
+            if (!allStudents || allStudents.length === 0) {
+                return res.status(404).json({ message: "No students found!" });
+            }
+
+            res.status(200).json({
+                message: "Student data fetched successfully",
+                page,
+                limit,
+                studentCount,
+                totalPage: Math.ceil(studentCount / limit),
+                data: allStudents,
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: error.message });
+        }
+    };
+
 
 }
 
