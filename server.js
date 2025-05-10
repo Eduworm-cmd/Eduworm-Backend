@@ -5,7 +5,6 @@ const morgan = require("morgan");
 const connectDB = require("./config/db");
 const authSchoolBranchRoutes = require("./routes/SuperAdmin/authSchoolBranchRoutes");
 const superAdminAuthRoutes = require("./routes/authRoutes_SuperAdmin");
-const studentRoutes = require("./routes/studentRoutes");
 const gradeRoutes = require("./routes/SuperAdmin/gradeRoutes");
 const levelRoutes = require("./routes/levelRoutes");
 const contentRoutes = require("./routes/contentRoutes");
@@ -35,7 +34,6 @@ connectDB();
 
 app.use("/api/auth_SchoolBranch", authSchoolBranchRoutes);
 app.use("/api/superadmin-auth", superAdminAuthRoutes);
-app.use("/api/students", studentRoutes);
 app.use("/api/grade", gradeRoutes);
 app.use("/api/level", levelRoutes);
 app.use("/api/content", contentRoutes);

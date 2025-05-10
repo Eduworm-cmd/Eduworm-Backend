@@ -1,6 +1,6 @@
 const authSchoolBranchModel = require("../../models/SuperAdmin/authSchoolBranchModel");
 const classModel = require("../../models/SuperAdmin/classModel");
-const studentModel = require("../../models/SuperAdmin/studentModel");
+const studentModel = require("../../models/SuperAdmin/schoolModel");
 
 class StudentController {
     createStudent = async (req, res) => {

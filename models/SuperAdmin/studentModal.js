@@ -60,4 +60,4 @@ studentSchema.index({ isActive: 1 });
 
 
 
-module.exports = mongoose.model("Studen", studentSchema);
+module.exports = mongoose.model("Student", studentSchema);
