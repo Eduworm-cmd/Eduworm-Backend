@@ -1,29 +1,28 @@
 const express = require("express");
-
 const {
   verifyOtp,
   loginUser,
   loginBranch,
   createSchoolBranch,
-  // createSchoolAdminBySuperAdmin,
   loginWithEmailPassword,
   getBranchesById,
   getBranchesBySchoolId,
-  getallBranches
+  getallBranches,
+  searchBySchoolName
 } = require("../../controllers/SuperAdmin/authSchoolBranchController");
 
 const router = express.Router();
 
+router.get("/search", searchBySchoolName); 
 
-
-
+// ✅ Functional routes
 router.post("/verify", verifyOtp);
 router.post("/login-branch", loginBranch);
 router.post("/create_SchoolBranch", createSchoolBranch);
 router.post("/login", loginUser);
-router.get("/allBranches", getallBranches)
-router.get("/:schoolId",getBranchesBySchoolId)
 router.post("/login-email", loginWithEmailPassword); 
-router.get("/branches/:branchId", getBranchesById);
+router.get("/allBranches", getallBranches);
+
+router.get("/:schoolId", getBranchesBySchoolId);
 
 module.exports = router;

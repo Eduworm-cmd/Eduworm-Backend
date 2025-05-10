@@ -4,6 +4,7 @@ const schoolSchema = require("../../models/SuperAdmin/schoolModel")
 const cloudinary = require("../../config/cloudinary");
 const mongoose = require("mongoose");
 const gradeModel = require("../../models/SuperAdmin/gradeModel");
+const schoolModel = require("../../models/SuperAdmin/schoolModel");
 
 
 const generateToken = (user) => {
@@ -294,7 +295,7 @@ const loginWithEmailPassword = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     // Generate the token after successful login
-    const token = generateToken(user); 
+    const token = generateToken(user);
 
     res.status(200).json({
       message: "Login successful",
@@ -611,6 +612,34 @@ const getBranchesById = async (req, res) => {
   }
 }
 
+const searchBySchoolName = async (req, res) => {
+  try {
+    const { name } = req.query;
+
+    if (!name) {
+      return res.status(400).json({ message: "School name is required" });
+    }
+
+    const matchedSchools = await schoolModel.find({
+      schoolName: { $regex: name, $options: "i" }, 
+    }).populate({
+      path: "branches",
+      model: "SchoolAdmin",
+    });
+
+    if (!matchedSchools.length) {
+      return res.status(404).json({ message: "No school found" });
+    }
+
+    return res.status(200).json({
+      message: "Schools with branches fetched successfully",
+      data: matchedSchools,
+    });
+  } catch (error) {
+    console.error("Search error:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 
 
@@ -625,5 +654,6 @@ module.exports = {
   createSchoolBranch,
   loginWithEmailPassword,
   getBranchesById,
+  searchBySchoolName
   // createSchoolAdminBySuperAdmin
 };
