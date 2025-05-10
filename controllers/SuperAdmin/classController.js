@@ -1,5 +1,6 @@
+const { default: mongoose } = require('mongoose');
 const classModel = require('../../models/SuperAdmin/classModel');
-const schoolModel = require('../../models/SuperAdmin/schoolModel');
+const authSchoolBranchModel = require('../../models/SuperAdmin/authSchoolBranchModel');
 
 // Get all classes
 // exports.getAllClasses = async (req, res) => {
@@ -225,6 +226,45 @@ class ClassController {
        return res.status(500).json({message:error.message});
     }
   }
+
+
+  getCLassesByBranchId = async (req, res) => {
+    try {
+      const { branchId } = req.params;
+
+      // ✅ Validate ObjectId
+      if (!mongoose.Types.ObjectId.isValid(branchId)) {
+        return res.status(400).json({
+          message: "Invalid Branch Id format"
+        });
+      }
+
+      // ✅ Find the branch and populate classes
+      const branch = await authSchoolBranchModel.findById(branchId).populate({
+        path: "classes",
+        select: "className _id type", // Only return necessary fields
+      });
+
+      // ✅ Check if branch exists
+      if (!branch) {
+        return res.status(404).json({
+          message: "Branch not found"
+        });
+      }
+
+      console.log(branch);
+
+      // ✅ Return classes
+      return res.status(200).json({
+        message: "Classes fetched successfully",
+        data: branch.classes
+      });
+
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  };
+
 
 }
 

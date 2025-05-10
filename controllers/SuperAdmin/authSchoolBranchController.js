@@ -177,24 +177,24 @@ const createSchoolBranch = async (req, res) => {
 
     // Basic validations
     if (!contact || typeof contact !== 'object') {
-      return res.status(400).json({ error: "Contact information is required." });
+      return res.status(400).json({ message: "Contact information is required." });
     }
     if (!contact.email || typeof contact.email !== 'string' || !contact.email.trim()) {
-      return res.status(400).json({ error: "Valid email is required." });
+      return res.status(400).json({ message: "Valid email is required." });
     }
     if (!contact.phone || typeof contact.phone !== 'string' || !contact.phone.trim()) {
-      return res.status(400).json({ error: "Valid phone number is required." });
+      return res.status(400).json({ message: "Valid phone number is required." });
     }
 
     // Check duplicates
     const existingEmail = await SchoolAdmin.findOne({ "contact.email": contact.email.trim() });
     if (existingEmail) {
-      return res.status(409).json({ error: "Email already in use" });
+      return res.status(409).json({ message: "Email already in use" });
     }
 
     const existingPhone = await SchoolAdmin.findOne({ "contact.phone": contact.phone.trim() });
     if (existingPhone) {
-      return res.status(409).json({ error: "Phone number already in use" });
+      return res.status(409).json({ message: "Phone number already in use" });
     }
 
     // Handle logo upload (base64, data URI, or URL)
@@ -255,7 +255,7 @@ const createSchoolBranch = async (req, res) => {
     // Add branch ID to school
     const schoolDoc = await schoolSchema.findById(school);
     if (!schoolDoc) {
-      return res.status(404).json({ error: "School not found." });
+      return res.status(404).json({ message: "School not found." });
     }
 
     schoolDoc.branches.push(savedBranch._id);
@@ -273,7 +273,7 @@ const createSchoolBranch = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating branch:", error.message);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -294,7 +294,7 @@ const loginWithEmailPassword = async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     // Generate the token after successful login
-    const token = generateToken(user); // Pass the entire user object to generate the token
+    const token = generateToken(user); 
 
     res.status(200).json({
       message: "Login successful",

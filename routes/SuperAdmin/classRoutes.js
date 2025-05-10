@@ -9,6 +9,7 @@ const router = express.Router();
 router.post('/create', classController.createClass);
 router.get('/all', classController.getAllClass);
 router.get('/dropdown', classController.getClassForDropdown);
+router.get('/:branchId', classController.getCLassesByBranchId);
 
 
 // router.put('/:id', classController.updateClass);
