@@ -123,7 +123,7 @@ const verifyOtp = async (req, res) => {
         id: user._id,
         email: user.contact.email,
         phoneNumber: user.contact.phone,
-        role: "branchadmin",
+        role: "schooladmin",
         schoolName: user.name,
       }
     });
