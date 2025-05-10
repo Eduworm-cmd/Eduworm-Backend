@@ -1,6 +1,6 @@
 const cloudinary = require("../config/cloudinary");
 const mongoose = require("mongoose");
-const studentModel = require("../models/studentModel");
+const studentModel = require("../models/SuperAdmin/studentModel");
 const SchoolAdmin = require("../models/SuperAdmin/authSchoolBranchModel");
 const classController = require("./SuperAdmin/classController");
 const classModel = require("../models/SuperAdmin/classModel");
