@@ -31,9 +31,9 @@ const roleMiddleware = (allowedRoles) => {
       return res.status(401).json({ message: 'Token missing' });
     }
 
-    // 3. Token Length Validation
+
     console.log('\n[3] Token Length:', token.length, 'characters');
-    if (token.length < 50) { // Typical JWT is >100 chars
+    if (token.length < 50) { 
       console.error('❌ Suspiciously short token');
       return res.status(401).json({ message: 'Invalid token length' });
     }

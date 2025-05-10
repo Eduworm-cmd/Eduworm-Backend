@@ -10,6 +10,8 @@ router.post(
     studentController.createStudent
 );
 
+router.get("/getAllStudents", studentController.getAllStudents);
+
 // Test role - Example route to check if middleware is working
 router.get(
     "/test-role",

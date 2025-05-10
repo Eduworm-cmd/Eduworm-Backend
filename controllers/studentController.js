@@ -125,7 +125,65 @@ const studentController = {
 
 ,
 
-  
+
+
+  getAllStudents: async (req, res) => {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        branch,
+        grade,
+        section,
+        name,
+        enrollmentStatus,
+        isActive
+      } = req.query;
+
+      // Build filter object
+      const filter = {};
+
+      if (branch) filter.branch = branch;
+      if (grade) filter['currentClass.grade'] = grade;
+      if (section) filter['currentClass.section'] = section;
+      if (enrollmentStatus) filter.enrollmentStatus = enrollmentStatus;
+      if (isActive !== undefined) filter.isActive = isActive === 'true';
+
+      // Handle name search (search in both firstName and lastName)
+      if (name) {
+        filter.$or = [
+          { firstName: { $regex: name, $options: 'i' } },
+          { lastName: { $regex: name, $options: 'i' } }
+        ];
+      }
+
+      // Execute query with pagination
+      const students = await studentModel.find(filter)
+        .populate('school', 'name displayName')
+        .skip((page - 1) * limit)
+        .limit(parseInt(limit))
+        .sort({ createdAt: -1 })
+        .exec();
+
+      // Get total count for pagination
+      const totalCount = await studentModel.countDocuments(filter);
+
+      res.status(200).json({
+        success: true,
+        data: students,
+        pagination: {
+          total: totalCount,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(totalCount / limit)
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
   // Get a single student by ID
   getStudent: async (req, res) => {
     try {
@@ -151,63 +209,6 @@ const studentController = {
   },
   
   // Get all students with filtering and pagination
-  getAllStudents: async (req, res) => {
-    try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        branch, 
-        grade, 
-        section, 
-        name, 
-        enrollmentStatus,
-        isActive 
-      } = req.query;
-      
-      // Build filter object
-      const filter = {};
-      
-      if (branch) filter.branch = branch;
-      if (grade) filter['currentClass.grade'] = grade;
-      if (section) filter['currentClass.section'] = section;
-      if (enrollmentStatus) filter.enrollmentStatus = enrollmentStatus;
-      if (isActive !== undefined) filter.isActive = isActive === 'true';
-      
-      // Handle name search (search in both firstName and lastName)
-      if (name) {
-        filter.$or = [
-          { firstName: { $regex: name, $options: 'i' } },
-          { lastName: { $regex: name, $options: 'i' } }
-        ];
-      }
-      
-      // Execute query with pagination
-      const students = await studentModel.find(filter)
-        .populate('school', 'name displayName')
-        .skip((page - 1) * limit)
-        .limit(parseInt(limit))
-        .sort({ createdAt: -1 })
-        .exec();
-      
-      // Get total count for pagination
-      const totalCount = await studentModel.countDocuments(filter);
-      
-      res.status(200).json({
-        success: true,
-        data: students,
-        pagination: {
-          total: totalCount,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          pages: Math.ceil(totalCount / limit)
-        }
-      });
-    } catch (error) {
-      console.error("Error fetching students:", error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
-  
   // Update an existing student
   updateStudent: async (req, res) => {
     try {
