@@ -89,6 +89,41 @@ class SchoolController {
         }
     }
 
+
+    updateSchoolById = async(req,res) =>{
+      try {
+        const {schoolId} = req.params.schoolId;
+        const updateData = req.body;
+
+
+        console.log(updateData , schoolId);
+
+
+        const updateedSchool = await schoolModel.findByIdAndUpdate(schoolId, updateData, {
+          new: true,
+          runValidators: true
+        });
+
+
+        if(!updateedSchool){
+          return res.status(404).json({message:"School Not Found !"});
+        }
+        
+        if(!schoolId){
+          return res.status(400).json({message:"School Id ir required !"})
+        }
+        if(!mongoose.Types.ObjectId.isValid(schoolId)){
+          return res.status.json({message: "Invalid School Id !"});
+        }
+
+        res.status(201).json({message: "School Updated Successfully !", updateedSchool});
+
+      } catch (error) {
+        console.log(error.message);
+        res.status(500).json({message:error.message});
+      }
+    }
+
     getSchoolById = async(req,res) =>{
       try{
         const {schoolId} = req.params;

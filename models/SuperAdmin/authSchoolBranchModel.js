@@ -45,10 +45,10 @@ const SchoolAdminSchema = new mongoose.Schema({
     }
   },
   affiliation_board: String,
-  total_Students: {
-    type: Number,
-    default: 0
-  },
+  total_Students: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student'
+  }],
   total_Teachers: {
     type: Number,
     default: 0

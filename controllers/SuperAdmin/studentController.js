@@ -5,47 +5,70 @@ const schoolModel = require("../../models/SuperAdmin/schoolModel");
 const studentModal = require("../../models/SuperAdmin/studentModal");
 
 class StudentController {
-     createStudent = async (req, res) => {
+
+
+    fixTotalStudentsArray = async (branchId) => {
+        try {
+            // Ensure total_Students is an array
+            const branch = await authSchoolBranchModel.findById(branchId);
+            if (branch) {
+                if (!Array.isArray(branch.total_Students)) {
+                    // If total_Students is not an array, set it to an empty array
+                    await authSchoolBranchModel.findByIdAndUpdate(branchId, {
+                        $set: { total_Students: [] }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Error fixing total_Students field:", error);
+        }
+    };
+
+    createStudent = async (req, res) => {
         try {
             const { schoolId, branchId, classId } = req.body;
 
+            // Validation for required fields
             if (!schoolId || !branchId || !classId) {
                 return res.status(400).json({ message: "schoolId, branchId, classId are required!" });
             }
 
-            // Find School
+            // Fetch School details
             const school = await schoolModel.findById(schoolId);
             if (!school) {
                 return res.status(400).json({ success: false, message: "Invalid school ID" });
             }
 
-            // Find Branch
+            // Fetch Branch details
             const branch = await authSchoolBranchModel.findById(branchId);
             if (!branch) {
                 return res.status(400).json({ success: false, message: "Invalid branch ID" });
             }
 
-            // Find Class
+            // Fetch Class details
             const classData = await classModel.findById(classId);
             if (!classData) {
                 return res.status(404).json({ success: false, message: "Class not found" });
             }
 
-            // Create Student
+            // Ensure total_Students is an array before proceeding
+            await this.fixTotalStudentsArray(branchId); // Use 'this' here
+
+            // Create new Student
             const student = await studentModal.create({
-                ...req.body,
+                ...req.body, // Rest of the student data from request body
                 school: schoolId,
                 schoolBranch: branchId,
                 class: classId,
-                isActive: true
+                isActive: true // Ensure the student is active by default
             });
 
-            // Update authSchoolBranchModel: Add student ID to total_Students array
+            // Update Branch: Add student ID to total_Students array
             await authSchoolBranchModel.findByIdAndUpdate(branchId, {
-                $push: { total_Students: student._id }  // Adding ObjectId to total_Students
+                $push: { total_Students: student._id }
             });
 
-            // Update classModel: Add student ID to students array
+            // Update Class: Add student ID to class's students array
             await classModel.findByIdAndUpdate(classId, {
                 $push: { students: student._id }
             });
@@ -57,6 +80,7 @@ class StudentController {
             res.status(500).json({ success: false, message: error.message });
         }
     };
+
 
 
 
