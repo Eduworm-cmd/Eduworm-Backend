@@ -4,8 +4,8 @@ const router = express();
 
 router.post('/create',studentController.createStudent);
 router.get('/all',studentController.getAllStudent);
-router.get('/branch/:branchId',studentController.getAllStudentByBrachId);
-router.put('/:id',studentController.updateStudent);
+// router.get('/branch/:branchId',studentController.getAllStudentByBrachId);
+router.put('/:studentId',studentController.updateStudent);
 
 
 

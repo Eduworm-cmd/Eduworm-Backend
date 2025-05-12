@@ -5,28 +5,33 @@ const schoolModel = require("../../models/SuperAdmin/schoolModel");
 const studentModal = require("../../models/SuperAdmin/studentModal");
 
 class StudentController {
-    createStudent = async (req, res) => {
+     createStudent = async (req, res) => {
         try {
             const { schoolId, branchId, classId } = req.body;
 
             if (!schoolId || !branchId || !classId) {
-                return res.status(400).json({ message: "schoolId, bracnchId, classId is required !" })
+                return res.status(400).json({ message: "schoolId, branchId, classId are required!" });
             }
+
+            // Find School
             const school = await schoolModel.findById(schoolId);
             if (!school) {
                 return res.status(400).json({ success: false, message: "Invalid school ID" });
             }
 
+            // Find Branch
             const branch = await authSchoolBranchModel.findById(branchId);
             if (!branch) {
                 return res.status(400).json({ success: false, message: "Invalid branch ID" });
             }
 
+            // Find Class
             const classData = await classModel.findById(classId);
             if (!classData) {
                 return res.status(404).json({ success: false, message: "Class not found" });
             }
 
+            // Create Student
             const student = await studentModal.create({
                 ...req.body,
                 school: schoolId,
@@ -35,21 +40,24 @@ class StudentController {
                 isActive: true
             });
 
+            // Update authSchoolBranchModel: Add student ID to total_Students array
             await authSchoolBranchModel.findByIdAndUpdate(branchId, {
-                $push: { total_Students: student._id }
+                $push: { total_Students: student._id }  // Adding ObjectId to total_Students
             });
 
+            // Update classModel: Add student ID to students array
             await classModel.findByIdAndUpdate(classId, {
                 $push: { students: student._id }
             });
 
-            res.status(201).json({ message: "Student Added Successfully ", student });
+            res.status(201).json({ message: "Student Added Successfully", student });
 
         } catch (error) {
             console.error("Error creating student:", error);
             res.status(500).json({ success: false, message: error.message });
         }
     };
+
 
 
     getAllStudent = async (req, res) => {
@@ -87,37 +95,33 @@ class StudentController {
         }
     };
 
-    updateStudent = async (req, res) =>{
+    updateStudent = async (req, res) => {
         try {
-            const {studentId} = req.params;
+            const studentId = req.params.studentId; 
             const updateData = req.body;
-            {
-                if (!studentId)
-                {
-                    return res.status(400).json({message:"studentId is required!"});
-                }
 
-                if (!mongoose.Types.ObjectId.isValid(studentId)) {
-                    return res.status(400).json({ message: "Invalid student ID" });
-                }
 
-                const student = await studentModal.findByIdAndUpdate(studentId, updateData, { new: true });
+            console.log(studentId, updateData);
 
-                if (!student){
-                    res.status(404).json({message:"Student not found!"});
-                }
+            const updatedStudent = await studentModal.findByIdAndUpdate(studentId, updateData, {
+                new: true,
+                runValidators: true
+            });
 
-                res.status(200).json({message:"Student updated successfully", student});
+            if (!updatedStudent) {
+                return res.status(404).json({ message: "Student not found" });
             }
+
+            res.status(200).json({
+                message: "Student updated successfully",
+                student: updatedStudent
+            });
         } catch (error) {
             console.error("Error updating student:", error);
-            if (error.name === "ValidationError") {
-                res.status(400).json({ message: error.message });
-            } else {
-                res.status(500).json({ message: error.message });
-            }
+            res.status(500).json({ message: "Failed to update student", error });
         }
-    }
+    };
+
 
 
     getAllStudentByBrachId = async (req, res) => {

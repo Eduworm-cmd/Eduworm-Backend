@@ -1,83 +1,136 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
-const authSchema = new mongoose.Schema(
-  {
-    BranchId: { type: String, unique: true },
-    school: { type: mongoose.Schema.Types.ObjectId, ref: "School" },
-    name: { type: String, required: true },
-    displayName: { type: String, required: true },
-    location: {
-      address: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      country: { type: String, required: true },
-      pincode: { type: String, required: true },
-    },
-    role: {
-      type: String,
-      enum: ["schooladmin"],
-      default: "schooladmin",
-    },
-    isVerified:{type:Boolean,default:false},
-    staticOtp:{
-       type:String,
-       default:"123456",
-    },
-    contact: {
-      email: { type: String, required: true, lowercase: true },
-      phone: { type: String, required: true },
-    },
-    affiliation_board: {
-      type: String,
-      enum: ["CBSE", "ICSE", "State Board", "IB", "Other"],
-      default: "Other",
-    },
-    total_Students: [{ type: mongoose.Schema.Types.ObjectId, ref: "Student" }],
-    total_Teachers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Teacher" }],
-    total_Staff: [{ type: mongoose.Schema.Types.ObjectId, ref: "Staff" }],
-    branchPassword: { type: String, required: true, select: false },
-    branchLogo: { type: String },
-    fees: [
-      {
-        class: String,
-        amount: Number,
-      },
-    ],
-    startDate: { type: String },
-    endDate: { type: String },
-    isActive: { type: Boolean, default: true },
-    classes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Class" }],
-    academicYear: [
-      { type: mongoose.Schema.Types.ObjectId, ref: "AcademicYear" },
-    ],
+const SchoolAdminSchema = new mongoose.Schema({
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    unique: true
   },
-  { timestamps: true }
-);
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  displayName: {
+    type: String,
+    trim: true
+  },
+  role: {
+    type: String,
+    default: 'branch-admin',
+    enum: ['branch-admin']
+  },
+  location: {
+    address: { type: String, trim: true },
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
+    country: { type: String, trim: true },
+    pincode: { type: String, trim: true }
+  },
+  contact: {
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      index: true // Index but not unique at this level
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true // Index but not unique at this level
+    }
+  },
+  affiliation_board: String,
+  total_Students: {
+    type: Number,
+    default: 0
+  },
+  total_Teachers: {
+    type: Number,
+    default: 0
+  },
+  total_Staff: {
+    type: Number,
+    default: 0
+  },
+  branchPassword: {
+    type: String,
+    required: true
+  },
+  branchLogo: {
+    type: String,
+    default: ""
+  },
+  fees: [{
+    name: String,
+    amount: Number,
+    frequency: {
+      type: String,
+      enum: ['monthly', 'quarterly', 'half-yearly', 'yearly']
+    }
+  }],
+  startDate: Date,
+  endDate: Date,
+  classes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class'
+  }],
+  academicYear: String,
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true
+});
 
-// 🔐 Password hashing
-authSchema.pre("save", async function (next) {
-  if (!this.isModified("branchPassword")) return next();
+// Compound index to ensure email uniqueness across all branches
+SchoolAdminSchema.index({ "contact.email": 1 }, { unique: true, sparse: true });
+
+// Compound index to ensure phone uniqueness across all branches
+SchoolAdminSchema.index({ "contact.phone": 1 }, { unique: true, sparse: true });
+
+// Hash password before saving
+SchoolAdminSchema.pre('save', async function (next) {
+  const branch = this;
+
+  // Only hash the password if it has been modified (or is new)
+  if (!branch.isModified('branchPassword')) return next();
+
   try {
+    // Generate salt
     const salt = await bcrypt.genSalt(10);
-    this.branchPassword = await bcrypt.hash(this.branchPassword, salt);
+
+    // Hash the password with the new salt
+    const hashedPassword = await bcrypt.hash(branch.branchPassword, salt);
+
+    // Replace plain text password with hashed password
+    branch.branchPassword = hashedPassword;
     next();
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 });
 
-authSchema.pre('save',async function(next) {
-  // Generate BranchId if not already present
-  if (!this.BranchId) {
-    const timestamp = Date.now().toString().slice(-4);
-    const random = Math.floor(1000 + Math.random() * 9000);
-    this.BranchId = `BR-${timestamp}${random}`;
+// Method to compare password
+SchoolAdminSchema.methods.comparePassword = async function (candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.branchPassword);
+  } catch (error) {
+    throw new Error(error);
   }
-  next();
-})
-authSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.branchPassword);
 };
 
-module.exports = mongoose.model("SchoolAdmin", authSchema);
+module.exports = mongoose.model('SchoolAdmin', SchoolAdminSchema);
