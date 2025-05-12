@@ -87,6 +87,38 @@ class StudentController {
         }
     };
 
+    updateStudent = async (req, res) =>{
+        try {
+            const {studentId} = req.params;
+            const updateData = req.body;
+            {
+                if (!studentId)
+                {
+                    return res.status(400).json({message:"studentId is required!"});
+                }
+
+                if (!mongoose.Types.ObjectId.isValid(studentId)) {
+                    return res.status(400).json({ message: "Invalid student ID" });
+                }
+
+                const student = await studentModal.findByIdAndUpdate(studentId, updateData, { new: true });
+
+                if (!student){
+                    res.status(404).json({message:"Student not found!"});
+                }
+
+                res.status(200).json({message:"Student updated successfully", student});
+            }
+        } catch (error) {
+            console.error("Error updating student:", error);
+            if (error.name === "ValidationError") {
+                res.status(400).json({ message: error.message });
+            } else {
+                res.status(500).json({ message: error.message });
+            }
+        }
+    }
+
 
     getAllStudentByBrachId = async (req, res) => {
         try {
