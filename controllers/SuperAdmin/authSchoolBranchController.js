@@ -5,6 +5,7 @@ const cloudinary = require("../../config/cloudinary");
 const mongoose = require("mongoose");
 const gradeModel = require("../../models/SuperAdmin/gradeModel");
 const schoolModel = require("../../models/SuperAdmin/schoolModel");
+const authSchoolBranchModel = require("../../models/SuperAdmin/authSchoolBranchModel");
 
 
 const generateToken = (user) => {
@@ -545,6 +546,7 @@ const loginWithEmailPassword = async (req, res) => {
 
 
 // Get All Schools With Full Details
+
 const getFullSchools = async (req, res) => {
   try {
     const allSchools = await Auth.find({ role: 'schooladmin' })
@@ -713,7 +715,7 @@ const searchBySchoolName = async (req, res) => {
     }
 
     const matchedSchools = await schoolModel.find({
-      schoolName: { $regex: name, $options: "i" }, 
+      schoolName: { $regex: name, $options: "i" },
     }).populate({
       path: "branches",
       model: "SchoolAdmin",
@@ -732,6 +734,7 @@ const searchBySchoolName = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 
 
