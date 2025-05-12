@@ -7,6 +7,7 @@ router.post('/create', SchoolController.createSchool);
 router.get('/dropdown',SchoolController.getSchoolsForDropdown);
 router.get('/all', SchoolController.getAllSchool);
 router.get('/:schoolId',SchoolController.getSchoolById);
+router.put('/updateSchool/:schoolId',SchoolController.updateSchoolById);
 
 
 module.exports = router;

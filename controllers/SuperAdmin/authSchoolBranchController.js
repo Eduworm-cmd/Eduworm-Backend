@@ -5,7 +5,6 @@ const cloudinary = require("../../config/cloudinary");
 const mongoose = require("mongoose");
 const gradeModel = require("../../models/SuperAdmin/gradeModel");
 const schoolModel = require("../../models/SuperAdmin/schoolModel");
-const authSchoolBranchModel = require("../../models/SuperAdmin/authSchoolBranchModel");
 
 
 const generateToken = (user) => {
@@ -178,150 +177,91 @@ const createSchoolBranch = async (req, res) => {
     } = req.body;
 
     // Basic validations
-    if (!school) {
-      return res.status(400).json({ message: "School ID is required." });
-    }
-
-    if (!name || typeof name !== 'string' || !name.trim()) {
-      return res.status(400).json({ message: "Branch name is required." });
-    }
-
-    if (!branchPassword) {
-      return res.status(400).json({ message: "Branch password is required." });
-    }
-
     if (!contact || typeof contact !== 'object') {
       return res.status(400).json({ message: "Contact information is required." });
     }
-
     if (!contact.email || typeof contact.email !== 'string' || !contact.email.trim()) {
       return res.status(400).json({ message: "Valid email is required." });
     }
-
     if (!contact.phone || typeof contact.phone !== 'string' || !contact.phone.trim()) {
       return res.status(400).json({ message: "Valid phone number is required." });
     }
 
-    // Clean and normalize email and phone
-    const cleanEmail = contact.email.trim().toLowerCase();
-    const cleanPhone = contact.phone.trim();
+    // Check duplicates
+    const existingEmail = await SchoolAdmin.findOne({ "contact.email": contact.email.trim() });
+    if (existingEmail) {
+      return res.status(409).json({ message: "Email already in use" });
+    }
 
-    // Check if the school exists
+    const existingPhone = await SchoolAdmin.findOne({ "contact.phone": contact.phone.trim() });
+    if (existingPhone) {
+      return res.status(409).json({ message: "Phone number already in use" });
+    }
+
+    // Handle logo upload (base64, data URI, or URL)
+    let branchLogoUrl = "";
+    try {
+      if (!branchLogo || branchLogo.length < 50) {
+        throw new Error("Invalid or missing logo image data");
+      }
+
+      const isDataUri = branchLogo.startsWith("data:image/");
+      const isUrl = branchLogo.startsWith("http");
+
+      const uploadSource = isDataUri
+        ? branchLogo
+        : isUrl
+          ? branchLogo
+          : `data:image/png;base64,${branchLogo}`;
+
+      const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
+        folder: "Branch Logos",
+      });
+
+      branchLogoUrl = uploadResponse.secure_url;
+    } catch (uploadError) {
+      console.error("Cloudinary upload error:", JSON.stringify(uploadError, null, 2));
+      return res.status(500).json({
+        message: "Logo upload failed",
+        details: uploadError?.message || uploadError?.error?.message || "Unknown error"
+      });
+    }
+
+    // Create new branch
+    const newBranch = new SchoolAdmin({
+      school,
+      name,
+      displayName,
+      location,
+      contact: {
+        email: contact.email.trim(),
+        phone: contact.phone.trim(),
+      },
+      affiliation_board,
+      total_Students,
+      total_Teachers,
+      total_Staff,
+      branchPassword,
+      branchLogo: branchLogoUrl,
+      fees,
+      startDate,
+      endDate,
+      classes,
+      academicYear,
+      isActive,
+    });
+
+    const savedBranch = await newBranch.save();
+
+    // Add branch ID to school
     const schoolDoc = await schoolSchema.findById(school);
     if (!schoolDoc) {
       return res.status(404).json({ message: "School not found." });
     }
 
-    // Check for email duplicate
-    const existingEmail = await SchoolAdmin.findOne({ "contact.email": cleanEmail });
-    if (existingEmail) {
-      return res.status(409).json({ message: "Email already in use" });
-    }
-
-    // Check for phone duplicate
-    const existingPhone = await SchoolAdmin.findOne({ "contact.phone": cleanPhone });
-    if (existingPhone) {
-      return res.status(409).json({ message: "Phone number already in use" });
-    }
-
-    // Safely convert numeric values, handling arrays or strings
-    const processNumber = (value) => {
-      // If it's an array, try to parse the first element
-      if (Array.isArray(value)) {
-        return value.length > 0 && !isNaN(Number(value[0])) ? Number(value[0]) : 0;
-      }
-      // If it's a string, try to parse it
-      if (typeof value === 'string') {
-        // Remove brackets if they exist (e.g., "[ 0 ]" -> "0")
-        const cleaned = value.replace(/[\[\]\s]/g, '');
-        return !isNaN(Number(cleaned)) ? Number(cleaned) : 0;
-      }
-      // If it's already a number or undefined/null
-      return !isNaN(Number(value)) ? Number(value) : 0;
-    };
-
-    // Handle logo upload if provided
-    let branchLogoUrl = "";
-    if (branchLogo) {
-      try {
-        if (branchLogo.length < 50) {
-          throw new Error("Invalid logo image data");
-        }
-
-        const isDataUri = branchLogo.startsWith("data:image/");
-        const isUrl = branchLogo.startsWith("http");
-
-        const uploadSource = isDataUri
-          ? branchLogo
-          : isUrl
-            ? branchLogo
-            : `data:image/png;base64,${branchLogo}`;
-
-        const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
-          folder: "Branch Logos",
-        });
-
-        branchLogoUrl = uploadResponse.secure_url;
-      } catch (uploadError) {
-        console.error("Cloudinary upload error:", JSON.stringify(uploadError, null, 2));
-        return res.status(500).json({
-          message: "Logo upload failed",
-          details: uploadError?.message || uploadError?.error?.message || "Unknown error"
-        });
-      }
-    }
-
-    // Process classes array
-    let processedClasses = [];
-    if (classes) {
-      // If classes is a string that looks like an array
-      if (typeof classes === 'string' && classes.includes('[')) {
-        try {
-          // Try to parse it as JSON
-          const parsedClasses = JSON.parse(classes);
-          processedClasses = Array.isArray(parsedClasses) ? parsedClasses : [];
-        } catch (e) {
-          processedClasses = [];
-        }
-      }
-      // If classes is already an array
-      else if (Array.isArray(classes)) {
-        processedClasses = classes;
-      }
-    }
-
-    // Create branch with clean data
-    const newBranch = new SchoolAdmin({
-      school,
-      name: name.trim(),
-      displayName: displayName ? displayName.trim() : name.trim(),
-      location: location || {},
-      contact: {
-        email: cleanEmail,
-        phone: cleanPhone,
-      },
-      affiliation_board: affiliation_board || "",
-      total_Students: processNumber(total_Students),
-      total_Teachers: processNumber(total_Teachers),
-      total_Staff: processNumber(total_Staff),
-      branchPassword,
-      branchLogo: branchLogoUrl,
-      fees: Array.isArray(fees) ? fees : [],
-      startDate: startDate || null,
-      endDate: endDate || null,
-      classes: processedClasses,
-      academicYear: academicYear || "",
-      isActive: isActive !== undefined ? Boolean(isActive) : true,
-    });
-
-    // Save the branch
-    const savedBranch = await newBranch.save();
-
-    // Add branch ID to school's branches array
     schoolDoc.branches.push(savedBranch._id);
     await schoolDoc.save();
 
-    // Return success response
     res.status(201).json({
       message: "Branch created successfully",
       branch: {
@@ -332,46 +272,13 @@ const createSchoolBranch = async (req, res) => {
         role: savedBranch.role,
       }
     });
-
   } catch (error) {
-    console.error("Error creating branch:", error);
-
-    // Handle specific error types
-    if (error.code === 11000) {
-      // Handle duplicate key error
-      const fieldName = Object.keys(error.keyPattern)[0];
-      let fieldLabel = fieldName;
-
-      // Make the field name more user-friendly
-      if (fieldName === "contact.email") fieldLabel = "Email";
-      if (fieldName === "contact.phone") fieldLabel = "Phone number";
-
-      return res.status(409).json({
-        message: `${fieldLabel} is already registered with another branch`,
-        field: fieldName,
-      });
-    }
-
-    // For validation errors, provide detailed information
-    if (error.name === 'ValidationError') {
-      const validationErrors = {};
-
-      for (const field in error.errors) {
-        validationErrors[field] = error.errors[field].message;
-      }
-
-      return res.status(400).json({
-        message: "Validation failed",
-        errors: validationErrors
-      });
-    }
-
-    return res.status(500).json({
-      message: "Failed to create branch",
-      error: error.message
-    });
+    console.error("Error creating branch:", error.message);
+    res.status(500).json({ message: error.message });
   }
 };
+
+
 
 // Controller function for login
 const loginWithEmailPassword = async (req, res) => {
@@ -546,7 +453,6 @@ const loginWithEmailPassword = async (req, res) => {
 
 
 // Get All Schools With Full Details
-
 const getFullSchools = async (req, res) => {
   try {
     const allSchools = await Auth.find({ role: 'schooladmin' })
@@ -715,7 +621,7 @@ const searchBySchoolName = async (req, res) => {
     }
 
     const matchedSchools = await schoolModel.find({
-      schoolName: { $regex: name, $options: "i" },
+      schoolName: { $regex: name, $options: "i" }, 
     }).populate({
       path: "branches",
       model: "SchoolAdmin",
@@ -734,7 +640,6 @@ const searchBySchoolName = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
 
 
 

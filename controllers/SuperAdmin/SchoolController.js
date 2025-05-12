@@ -90,39 +90,45 @@ class SchoolController {
     }
 
 
-    updateSchoolById = async(req,res) =>{
-      try {
-        const {schoolId} = req.params.schoolId;
-        const updateData = req.body;
+   updateSchoolById = async (req, res) => {
+    try {
+      // ❌ Fix: Wrong destructuring
+      const schoolId = req.params.schoolId; // ✅ Correct way to access path param
 
-
-        console.log(updateData , schoolId);
-
-
-        const updateedSchool = await schoolModel.findByIdAndUpdate(schoolId, updateData, {
-          new: true,
-          runValidators: true
-        });
-
-
-        if(!updateedSchool){
-          return res.status(404).json({message:"School Not Found !"});
-        }
-        
-        if(!schoolId){
-          return res.status(400).json({message:"School Id ir required !"})
-        }
-        if(!mongoose.Types.ObjectId.isValid(schoolId)){
-          return res.status.json({message: "Invalid School Id !"});
-        }
-
-        res.status(201).json({message: "School Updated Successfully !", updateedSchool});
-
-      } catch (error) {
-        console.log(error.message);
-        res.status(500).json({message:error.message});
+      // ❌ Fix: This check should come before DB call
+      if (!schoolId) {
+        return res.status(400).json({ message: "School Id is required!" });
       }
+
+      // ❌ Fix: Check validity BEFORE calling DB
+      if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+        return res.status(400).json({ message: "Invalid School Id!" });
+      }
+
+      const updateData = req.body;
+
+      console.log("Update Data:", updateData, "School ID:", schoolId);
+
+      // ✅ Find and update
+      const updatedSchool = await schoolModel.findByIdAndUpdate(schoolId, updateData, {
+        new: true,
+        runValidators: true,
+      });
+
+      if (!updatedSchool) {
+        return res.status(404).json({ message: "School Not Found!" });
+      }
+
+      res.status(200).json({
+        message: "School Updated Successfully!",
+        updatedSchool,
+      });
+
+    } catch (error) {
+      console.error("Error while updating school:", error.message);
+      res.status(500).json({ message: error.message });
     }
+  };
 
     getSchoolById = async(req,res) =>{
       try{
