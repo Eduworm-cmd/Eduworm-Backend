@@ -29,7 +29,6 @@ const StaffSchema = new mongoose.Schema({
 
 // Pre-save middleware to hash password and generate employeeId
 StaffSchema.pre('save', async function (next) {
-  // Hash password
   if (this.isModified('password')) {
     try {
       const salt = await bcrypt.genSalt(10);

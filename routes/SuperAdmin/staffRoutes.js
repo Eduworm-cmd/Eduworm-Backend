@@ -7,9 +7,10 @@ const { staffLogin } = require('../../controllers/Auth/authStaffController');
 //Login Staff User
 router.post('/staff_login',staffLogin);
 
-router.post('/staffCreate',roleMiddleware(['superadmin']),StaffController.createStaff);
-router.get('/all',roleMiddleware(['superadmin']),StaffController.GetAllStaff);
-router.get('/:staffId',roleMiddleware(['superadmin']),StaffController.getStaffById);
-
+router.post('/staffCreate',StaffController.createStaff);
+router.get('/all',StaffController.GetAllStaff);
+router.get('/:staffId',StaffController.getStaffById);
+router.put('/:id', StaffController.updateStaff);
+router.delete('/:id', StaffController.deleteStaff);
 
 module.exports = router;

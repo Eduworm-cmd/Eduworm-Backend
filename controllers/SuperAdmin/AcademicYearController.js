@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const academicYearSchema = require("../../models/SuperAdmin/academicYearModel");
+const academicYearModel = require("../../models/SuperAdmin/academicYearModel");
+const { json } = require("express");
 
 class AcademicYearController {
 
@@ -13,7 +15,7 @@ class AcademicYearController {
                 });
             }
 
-            const existingAcademicYear = await academicYearSchema.findOne({ name});
+            const existingAcademicYear = await academicYearSchema.findOne({ name });
             if (existingAcademicYear) {
                 return res.status(400).json({ message: `${name} already exists.` });
             }
@@ -104,6 +106,123 @@ class AcademicYearController {
         }
     };
 
+    // Update AcademicYear 
+    updateAcademicYear = async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { name, startDate, endDate } = req.body;
+
+            if (!id) {
+                return res.status(400).json({ message: "Academic Year ID is required!" });
+            }
+
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                return res.status(400).json({ message: "Invalid Academic Year ID!" });
+            }
+
+            if (!name || !startDate || !endDate) {
+                return res.status(400).json({ message: "Name, Start Date, and End Date are required!" });
+            }
+
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            if (isNaN(start) || isNaN(end)) {
+                return res.status(400).json({ message: "Invalid date format for start or end date." });
+            }
+
+            if (start >= end) {
+                return res.status(400).json({ message: "Start Date must be before End Date." });
+            }
+
+            const nameExists = await academicYearModel.findOne({ name, _id: { $ne: id } });
+            if (nameExists) {
+                return res.status(409).json({ message: "An academic year with this name already exists." });
+            }
+
+            const updated = await academicYearModel.findByIdAndUpdate(
+                id,
+                {
+                    name,
+                    startDate: start,
+                    endDate: end,
+                    updatedAt: new Date()
+                },
+                { new: true }
+            );
+
+            if (!updated) {
+                return res.status(404).json({ message: "Academic Year not found." });
+            }
+
+            return res.status(200).json({
+                message: "Academic Year updated successfully.",
+                data: updated,
+            });
+
+        } catch (error) {
+            console.error("Update Academic Year Error:", error);
+            return res.status(500).json({ message: "Internal server error." });
+        }
+    };
+
+    //Academic Year By  Id
+    academicYearById = async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({ message: "Academic Year ID is required!" });
+            }
+
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                return res.status(400).json({ message: "Invalid Academic Year ID!" });
+            }
+
+            const academicYear = await academicYearModel.findById(id);
+
+            if (!academicYear) {
+                return res.status(404).json({ message: "Academic Year not found!" });
+            }
+
+            return res.status(200).json({
+                message: "Academic Year fetched successfully!",
+                data: academicYear,
+            });
+        } catch (error) {
+            console.error("Error fetching Academic Year:", error);
+            return res.status(500).json({ message: "Internal server error." });
+        }
+    };
+
+
+    // Delete AcademicYear
+    deleteAcademicYear = async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({ message: "Academic Year Id is required !" });
+            }
+
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                return res.status(400).json({ message: "Invalid academic year Id !" });
+            }
+
+            const deletedAcademicYear = await academicYearModel.findByIdAndDelete(id);
+
+            if (!deletedAcademicYear) {
+                return res.status(404).json({ message: "Academic Year not found!" });
+            }
+
+            return res.status(200).json({ message: "Academic Year deleted successfully!" });
+
+        } catch (error) {
+            console.error(error.message);
+            return res.status(500).json({ message: "Internal server error." });
+
+        }
+    }
 
 }
 
