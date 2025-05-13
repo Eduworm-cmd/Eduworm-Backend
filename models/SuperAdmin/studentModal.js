@@ -5,7 +5,7 @@ const parentSchema = new mongoose.Schema({
     lastName: { type: String,require:true},
     relationship: { type: String,require:true},
     phoneNumber: { type: String,require:true},
-    email: { type: String,require:true},
+    email: { type: String,require:true,},
     currentAddress: { type: String},
     photo: { type: String }
 });
@@ -58,4 +58,19 @@ studentSchema.pre('save', async function (next) {
     }
     next();
 });
+
+studentSchema.pre("save", async function (next) {
+    const emails = this.parents.map(p => p.email);
+
+    const existing = await mongoose.model("Student").findOne({
+        "parents.email": { $in: emails }
+    });
+
+    if (existing) {
+        return next(new Error("Duplicate parent email detected."));
+    }
+
+    next();
+});
+
 module.exports = mongoose.model("Student", studentSchema);

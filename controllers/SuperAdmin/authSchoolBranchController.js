@@ -554,6 +554,20 @@ const getallBranches = async (req, res) => {
 };
 
 
+const DeleteBranch = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    
+    const branch = await SchoolAdmin.findByIdAndDelete(branchId);
+    if (!branch) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+    return res.status(200).json({ message: "Branch deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+
 const getBranchesBySchoolId = async (req, res) => {
   try {
     const { schoolId } = req.params;
@@ -641,9 +655,31 @@ const searchBySchoolName = async (req, res) => {
   }
 };
 
+const updateBranch = async (req, res) => {
+  try {
+    const branchId = req.params.branchId;
+    const updateBranch = req.body;
+
+    console.log(updateBranch, branchId);
+
+    const updatedBranch = await SchoolAdmin.findByIdAndUpdate(branchId, updateBranch, { new: true });
+
+    if (!updatedBranch) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    return res.status(200).json({ success: true, message: "Branch updated successfully", data: updatedBranch });
+  } catch (error) {
+    console.error("Error updating branch:", error);
+    return res.status(500).json({ message: error.message });
+  }
+}
+
 
 
 module.exports = {
+  DeleteBranch,
+  updateBranch,
   verifyOtp,
   loginUser,
   getAllSchools,

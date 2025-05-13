@@ -6,7 +6,6 @@ const SchoolAdminSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'School',
     required: true,
-    
   },
   name: {
     type: String,
@@ -35,13 +34,13 @@ const SchoolAdminSchema = new mongoose.Schema({
       required: true,
       trim: true,
       lowercase: true,
-      index: true // Index but not unique at this level
+      index: true 
     },
     phone: {
       type: String,
       required: true,
       trim: true,
-      index: true // Index but not unique at this level
+      index: true 
     }
   },
   affiliation_board: String,
@@ -96,27 +95,26 @@ const SchoolAdminSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index to ensure email uniqueness across all branches
+
 SchoolAdminSchema.index({ "contact.email": 1 }, {  sparse: true });
 
-// Compound index to ensure phone uniqueness across all branches
+
 SchoolAdminSchema.index({ "contact.phone": 1 }, {  sparse: true });
 
-// Hash password before saving
 SchoolAdminSchema.pre('save', async function (next) {
   const branch = this;
 
-  // Only hash the password if it has been modified (or is new)
+ 
   if (!branch.isModified('branchPassword')) return next();
 
   try {
-    // Generate salt
+   
     const salt = await bcrypt.genSalt(10);
 
-    // Hash the password with the new salt
+   
     const hashedPassword = await bcrypt.hash(branch.branchPassword, salt);
 
-    // Replace plain text password with hashed password
+   
     branch.branchPassword = hashedPassword;
     next();
   } catch (error) {
@@ -124,7 +122,7 @@ SchoolAdminSchema.pre('save', async function (next) {
   }
 });
 
-// Method to compare password
+
 SchoolAdminSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.branchPassword);

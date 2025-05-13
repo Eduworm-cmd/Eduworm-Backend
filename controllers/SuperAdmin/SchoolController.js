@@ -4,9 +4,9 @@ const schoolModel = require("../../models/SuperAdmin/schoolModel");
 class SchoolController {
     createSchool = async (req, res) => {
         try {
-          const { firstName, lastName, schoolName, contact } = req.body;
+          const { firstName, lastName, schoolName, contact , location } = req.body;
       
-          if (!firstName || !lastName || !schoolName || !contact?.email || !contact?.phone) {
+          if (!firstName || !lastName || !schoolName || !contact?.email || !contact?.phone|| !location?.country || !location?.state || !location?.city) {
             return res.status(400).json({ message: "All fields are required!" });
           }
       
@@ -26,11 +26,13 @@ class SchoolController {
             lastName,
             schoolName,
             contact,
+            location
           });
       
           await newSchool.save();
       
           res.status(201).json({
+            success: true,
             message: "School created successfully!",
             data: newSchool,
           });
@@ -92,15 +94,15 @@ class SchoolController {
 
    updateSchoolById = async (req, res) => {
     try {
-      // ❌ Fix: Wrong destructuring
-      const schoolId = req.params.schoolId; // ✅ Correct way to access path param
+     
+      const schoolId = req.params.schoolId; 
 
-      // ❌ Fix: This check should come before DB call
+     
       if (!schoolId) {
         return res.status(400).json({ message: "School Id is required!" });
       }
 
-      // ❌ Fix: Check validity BEFORE calling DB
+     
       if (!mongoose.Types.ObjectId.isValid(schoolId)) {
         return res.status(400).json({ message: "Invalid School Id!" });
       }
@@ -109,7 +111,7 @@ class SchoolController {
 
       console.log("Update Data:", updateData, "School ID:", schoolId);
 
-      // ✅ Find and update
+    
       const updatedSchool = await schoolModel.findByIdAndUpdate(schoolId, updateData, {
         new: true,
         runValidators: true,
@@ -150,6 +152,36 @@ class SchoolController {
         res.status(500).json({message:error.message});
       }
     }
+
+
+    schoolDeleteById = async (req, res) => {
+        try {
+          const { schoolId } = req.params;
+      
+          if (!schoolId) {
+            return res.status(400).json({ message: "School Id is required!" });
+          }
+      
+          if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+            return res.status(400).json({ message: "Invalid School Id!" });
+          }
+      
+          const deletedSchool = await schoolModel.findByIdAndDelete(schoolId);
+      
+          if (!deletedSchool) {
+            return res.status(404).json({ message: "School Not Found!" });
+          }
+      
+          res.status(200).json({
+            message: "School Deleted Successfully!",
+            deletedSchool,
+          });
+      
+        } catch (error) {
+          console.error("Error while deleting school:", error.message);
+          res.status(500).json({ message: error.message });
+        }
+      };
 
         
 }
