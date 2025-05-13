@@ -26,6 +26,28 @@ const schoolSchema = new mongoose.Schema({
       required: [true, 'Phone is required!'],
     },
   },
+  location: {
+    country: {
+      type: String,
+      required: [true, 'Country is required!'],
+    },
+    state: {
+      type: String,
+      required: [true, 'State is required!'],
+    },
+    city: {
+      type: String,
+      required: [true, 'City is required!'],
+    },
+    pinCode: {
+      type: String,
+      required: [true, 'Pin code is required!'],
+    },
+    address: {
+      type: String,
+      required: [true, 'Address is required!'],
+    },
+  },
   branches: [
     {
       type: mongoose.Schema.Types.ObjectId,

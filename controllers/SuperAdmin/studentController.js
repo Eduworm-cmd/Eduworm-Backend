@@ -73,7 +73,7 @@ class StudentController {
                 $push: { students: student._id }
             });
 
-            res.status(201).json({ message: "Student Added Successfully", student });
+            res.status(201).json({ success: true, message: "Student Added Successfully", student });
 
         } catch (error) {
             console.error("Error creating student:", error);
@@ -137,6 +137,7 @@ class StudentController {
             }
 
             res.status(200).json({
+                success: true,
                 message: "Student updated successfully",
                 student: updatedStudent
             });
@@ -149,7 +150,7 @@ class StudentController {
     getStudentById =async (req, res) => {
         try {
             const studentId = req.params.studentId;
-            const student = await studentModal.findById(studentId);
+            const student = await studentModal.findById(studentId).populate({ path: "class", select: "className" }).populate({ path: "school", select: "schoolName" }).populate({ path: "schoolBranch", select: "name" });
 
             if (!student) {
                 return res.status(404).json({ message: "Student not found" });
@@ -159,6 +160,21 @@ class StudentController {
         } catch (error) {
             console.error("Error fetching student:", error);
             res.status(500).json({ message: "Failed to fetch student", error });
+        }
+    }
+
+
+    DeleteStudentById = async (req, res) => {
+        try {
+            const { studentId } = req.params;
+            const student = await studentModal.findByIdAndDelete(studentId);
+            if (!student) {
+                return res.status(404).json({ message: "Student not found" });
+            }
+            res.status(200).json({ message: "Student deleted successfully"});
+        } catch (error) {
+            console.error("Error deleting student:", error);
+            res.status(500).json({ message: "Failed to delete student", error });
         }
     }
 

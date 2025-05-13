@@ -8,6 +8,7 @@ router.get('/dropdown',SchoolController.getSchoolsForDropdown);
 router.get('/all', SchoolController.getAllSchool);
 router.get('/:schoolId',SchoolController.getSchoolById);
 router.put('/updateSchool/:schoolId',SchoolController.updateSchoolById);
+router.delete('/deleteSchool/:schoolId',SchoolController.schoolDeleteById);
 
 
 module.exports = router;
