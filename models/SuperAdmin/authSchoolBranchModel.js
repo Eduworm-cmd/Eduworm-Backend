@@ -97,10 +97,10 @@ const SchoolAdminSchema = new mongoose.Schema({
 });
 
 // Compound index to ensure email uniqueness across all branches
-SchoolAdminSchema.index({ "contact.email": 1 }, { unique: true, sparse: true });
+SchoolAdminSchema.index({ "contact.email": 1 }, {  sparse: true });
 
 // Compound index to ensure phone uniqueness across all branches
-SchoolAdminSchema.index({ "contact.phone": 1 }, { unique: true, sparse: true });
+SchoolAdminSchema.index({ "contact.phone": 1 }, {  sparse: true });
 
 // Hash password before saving
 SchoolAdminSchema.pre('save', async function (next) {
