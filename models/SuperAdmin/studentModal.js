@@ -39,7 +39,7 @@ const studentSchema = new mongoose.Schema({
         relation: { type: String },
         phone: { type: String },
     },
-
+    // createdBy:{type:mongoose.Schema.Types.ObjectId,ref:""}
     parents: [parentSchema],
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });

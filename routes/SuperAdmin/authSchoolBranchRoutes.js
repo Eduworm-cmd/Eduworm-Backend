@@ -2,7 +2,6 @@ const express = require("express");
 const {
   verifyOtp,
   loginUser,
-  loginBranch,
   createSchoolBranch,
   loginWithEmailPassword,
   getBranchesById,
@@ -19,7 +18,6 @@ router.get("/search", searchBySchoolName);
 
 // ✅ Functional routes
 router.post("/verify", verifyOtp);
-router.post("/login-branch", loginBranch);
 router.post("/create_SchoolBranch", createSchoolBranch);
 router.post("/login", loginUser);
 router.post("/login-email", loginWithEmailPassword); 
