@@ -28,19 +28,23 @@ const SchoolAdminSchema = new mongoose.Schema({
     country: { type: String, trim: true },
     pincode: { type: String, trim: true }
   },
+  staticOtp: {
+    type: String,
+    default: null
+  },
   contact: {
     email: {
       type: String,
       required: true,
       trim: true,
       lowercase: true,
-      index: true 
+      index: true
     },
     phone: {
       type: String,
       required: true,
       trim: true,
-      index: true 
+      index: true
     }
   },
   affiliation_board: String,
@@ -48,21 +52,21 @@ const SchoolAdminSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Student'
   }],
-  total_Teachers: {
-    type: Number,
-    default: 0
-  },
-  total_Staff: {
-    type: Number,
-    default: 0
-  },
+  total_Staff: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Staff'
+  }],
+  total_Teachers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher'
+  }],
   branchPassword: {
     type: String,
     required: true
   },
   branchLogo: {
     type: String,
-    default: ""
+    default: "" 
   },
   fees: [{
     name: String,
@@ -95,26 +99,23 @@ const SchoolAdminSchema = new mongoose.Schema({
   timestamps: true
 });
 
-
-SchoolAdminSchema.index({ "contact.email": 1 }, {  sparse: true });
-
-
-SchoolAdminSchema.index({ "contact.phone": 1 }, {  sparse: true });
+SchoolAdminSchema.index({ "contact.email": 1 }, { sparse: true });
+SchoolAdminSchema.index({ "contact.phone": 1 }, { sparse: true });
 
 SchoolAdminSchema.pre('save', async function (next) {
   const branch = this;
 
- 
+
   if (!branch.isModified('branchPassword')) return next();
 
   try {
-   
+
     const salt = await bcrypt.genSalt(10);
 
-   
+
     const hashedPassword = await bcrypt.hash(branch.branchPassword, salt);
 
-   
+
     branch.branchPassword = hashedPassword;
     next();
   } catch (error) {

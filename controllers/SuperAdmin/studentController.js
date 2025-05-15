@@ -9,11 +9,9 @@ class StudentController {
 
     fixTotalStudentsArray = async (branchId) => {
         try {
-            // Ensure total_Students is an array
             const branch = await authSchoolBranchModel.findById(branchId);
             if (branch) {
                 if (!Array.isArray(branch.total_Students)) {
-                    // If total_Students is not an array, set it to an empty array
                     await authSchoolBranchModel.findByIdAndUpdate(branchId, {
                         $set: { total_Students: [] }
                     });

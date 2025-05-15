@@ -12,88 +12,13 @@ const generateToken = (user) => {
     {
       _id: user._id,
       role: user.role,
-      school: user.school || null, // Only added for schooladmin
+      school: user.school || null,
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN }
   );
 };
 
-//Remove
-const loginBranch = async (req, res) => {
-  const { email, branchPassword } = req.body;
-
-  try {
-    const existBranch = await SchoolAdmin.findOne({ "contact.email": email }).select("+branchPassword");
-    if (!existBranch) {
-      return res.status(400).json({ message: 'Branch not found' });
-    }
-    const isMatch = await existBranch.comparePassword(branchPassword);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign({
-      id: existBranch._id,
-      name: existBranch.name,
-      school: existBranch.school,
-    },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      })
-
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      branch: {
-        id: branch._id,
-        name: branch.name,
-        email: branch.contact.email,
-        phone: branch.contact.phone,
-        school: branch.school,
-        location: branch.location,
-      },
-    });
-
-  } catch (error) {
-    console.error(error, "Login error");
-    res.status(500).json({ message: error.message });
-  }
-}
-
-
-
-// Register user with OTP
-// const registerUser = async (req, res) => {
-//   try {
-//     const { firstName, lastName, phoneNumber, role, branches } = req.body;
-
-//     const userExists = await Auth.findOne({ phoneNumber });
-//     if (userExists) {
-//       return res.status(400).json({ message: "User already exists" });
-//     }
-
-//     // Generate OTP - in production use a random generator
-//     const staticOtp = "123456";
-
-//     const newUser = new Auth({
-//       firstName,
-//       lastName,
-//       phoneNumber,
-//       staticOtp,
-//       role,
-//       branches,
-//       isVerified: false,
-//     });
-
-//     await newUser.save();
-
-//     res.status(201).json({ message: "User registered successfully. Please verify OTP.", userId: newUser._id });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 // Verify OTP and mark user as verified
 const verifyOtp = async (req, res) => {
@@ -113,7 +38,6 @@ const verifyOtp = async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    // Generate token
     const token = generateToken(user._id, "schooladmin");
 
     res.status(200).json({
@@ -121,10 +45,12 @@ const verifyOtp = async (req, res) => {
       token,
       user: {
         id: user._id,
+        name: user.name,
         email: user.contact.email,
         phoneNumber: user.contact.phone,
         role: "schooladmin",
-        schoolName: user.name,
+        schoolId: user.school,
+        schoolName: user.name
       }
     });
   } catch (error) {
@@ -285,34 +211,31 @@ const loginWithEmailPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find the user based on email, also select the password field
     const user = await SchoolAdmin.findOne({ "contact.email": email }).select("+branchPassword");
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Compare the password entered with the stored password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Generate the token after successful login
     const token = generateToken(user);
 
     res.status(200).json({
       message: "Login successful",
       token,
       user: {
-        id: user._id,            // Returning the user ID
-        email: user.contact.email, // Returning the email
-        phoneNumber: user.contact.phone, // Returning the phone number
-        role: "schooladmin",     // Assigning the role
-        name: user.name,         // Returning user name
-        displayName: user.displayName, // Returning display name
-        school: user.school,     // Returning the school info
+        id: user._id,
+        email: user.contact.email,
+        phoneNumber: user.contact.phone,
+        role: "schooladmin",
+        name: user.name,
+        schoolId: user.school,
+        schoolName: user.displayName,
       },
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ message: error.message }); // Handle any errors
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -557,7 +480,7 @@ const getallBranches = async (req, res) => {
 const DeleteBranch = async (req, res) => {
   try {
     const { branchId } = req.params;
-    
+
     const branch = await SchoolAdmin.findByIdAndDelete(branchId);
     if (!branch) {
       return res.status(404).json({ message: "Branch not found" });
@@ -635,7 +558,7 @@ const searchBySchoolName = async (req, res) => {
     }
 
     const matchedSchools = await schoolModel.find({
-      schoolName: { $regex: name, $options: "i" }, 
+      schoolName: { $regex: name, $options: "i" },
     }).populate({
       path: "branches",
       model: "SchoolAdmin",
@@ -686,7 +609,6 @@ module.exports = {
   getFullSchools,
   getBranchesBySchoolId,
   getallBranches,
-  loginBranch,
   createSchoolBranch,
   loginWithEmailPassword,
   getBranchesById,

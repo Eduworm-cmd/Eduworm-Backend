@@ -15,6 +15,7 @@ const academicYearRoutes = require('./routes/SuperAdmin/academicYearRoutes');
 const schoolRoutes = require('./routes/SuperAdmin/schoolRoutes');
 const classRoutes = require('./routes/SuperAdmin/classRoutes');
 const studentsRoutes = require('./routes/SuperAdmin/studentRoutes');
+const staffRoutes = require('./routes/SchoolAdmin/staffRoutes');
 
 dotenv.config();
 
@@ -48,6 +49,9 @@ app.use('/api/academicYear',academicYearRoutes);
 app.use("/api/class",classRoutes);
 app.use("/api/superStudent",studentsRoutes);
 
+
+// School Admin API
+app.use("/api/staff",staffRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
