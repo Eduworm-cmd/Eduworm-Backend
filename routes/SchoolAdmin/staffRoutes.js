@@ -1,13 +1,13 @@
 const express = require('express');
 const StaffController = require('../../controllers/SchoolAdmin/StaffController');
-const roruter = express();
+const router = express();
 
-roruter.post('/create',StaffController.createStafff)
-roruter.get('/:branchId',StaffController.getAllStaff);
-roruter.get('/getStaff/:staffId',StaffController.getStaffById);
-roruter.get('/updateStaff/:staffId',StaffController.updateStaff);
+router.post('/create',StaffController.createStafff)
+router.get('/:branchId',StaffController.getAllStaff);
+router.get('/getStaff/:staffId',StaffController.getStaffById);
+router.put('/updateStaff/:staffId',StaffController.updateStaff);
+router.delete('/delete/:staffId', StaffController.delteStaffById);
 
 
 
-
-module.exports = roruter
+module.exports = router

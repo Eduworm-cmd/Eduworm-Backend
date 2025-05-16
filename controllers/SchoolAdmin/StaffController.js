@@ -5,6 +5,7 @@ const teacherModel = require("../../models/SchoolAdmin/teacherModal");
 const authSchoolBranchModel = require("../../models/SuperAdmin/authSchoolBranchModel");
 const schoolModel = require("../../models/SuperAdmin/schoolModel");
 const uploadToCloudinary = require("../../services/uploadToCloudinary");
+const bcrypt = require('bcryptjs');
 
 class StaffController {
     createStafff = async (req, res) => {
@@ -218,13 +219,13 @@ class StaffController {
     updateStaff = async (req, res) => {
         try {
             const { staffId } = req.params;
-            console.log("staffId", staffId);
-            
-            const { firstName, lastName, dateOfBirth, phoneNumber, emailId, password,
+
+            const { firstName, lastName, dateOfBirth, phoneNumber, emailId,
                 gender, employeeRole, dateofJoining, bloodGroup, maritalStatus,
                 marriageAnniversary, department, subDepartment, emergencyContact,
                 nationality, religion, address, employeeBankDeatils, classId,
-                teacherName, profile, aadharCard, panCard } = req.body;
+                teacherName, profile, aadharCard, panCard, password } = req.body;
+
 
             if (!staffId) {
                 return res.status(400).json({ message: 'Staff ID is required.' });
@@ -252,6 +253,12 @@ class StaffController {
                 }
             }
 
+            let hashedPassword = existingStaff.password;
+            if (password) {
+                const salt = await bcrypt.genSalt(10);
+                hashedPassword = await bcrypt.hash(password, salt);
+            }
+
             let profileUrl = existingStaff.profile;
             let aadharUrl = existingStaff.document.aadharCard;
             let panUrl = existingStaff.document.panCard;
@@ -266,7 +273,7 @@ class StaffController {
             }
 
             existingStaff.set({
-                firstName, lastName, dateOfBirth, phoneNumber, emailId, password, gender,
+                firstName, lastName, dateOfBirth, phoneNumber, emailId, password: hashedPassword, gender,
                 employeeRole, dateofJoining, bloodGroup, maritalStatus, marriageAnniversary,
                 department, subDepartment, emergencyContact, nationality, religion,
                 address, employeeBankDeatils,
@@ -279,6 +286,7 @@ class StaffController {
             })
 
             const updatedStaff = await existingStaff.save();
+
             if (employeeRole === "teacher") {
                 let teacher = await teacherModel.findById(existingStaff.teacher);
 
@@ -293,7 +301,6 @@ class StaffController {
                 existingStaff.teacher = savedTeacher._id;
                 await existingStaff.save();
 
-
                 await classModel.findByIdAndUpdate(classId, {
                     $addToSet: { teacher: savedTeacher._id }
                 });
@@ -302,11 +309,15 @@ class StaffController {
                     $addToSet: { total_Teachers: savedTeacher._id }
                 });
 
-            } else {
-                teacher.teacherName = teacherName || `${firstName} ${lastName}`;
-                teacher.class = classId;
-                teacher.assignClass = classId;
-                await teacher.save();
+            } else if (existingStaff.teacher) {
+                // 🔒 Only update if there's already a teacher record linked
+                const teacher = await teacherModel.findById(existingStaff.teacher);
+                if (teacher) {
+                    teacher.teacherName = teacherName || `${firstName} ${lastName}`;
+                    teacher.class = classId;
+                    teacher.assignClass = classId;
+                    await teacher.save();
+                }
             }
 
             return res.status(200).json({
@@ -319,11 +330,60 @@ class StaffController {
             return res.status(500).json({ message: error.message });
         }
     }
-    delteStaffById = async (req,res) =>{
-        try{
-            const {id} = req.params;
-        }catch(error){
 
+    delteStaffById = async (req, res) => {
+        try {
+            const { staffId } = req.params;
+
+            if (!staffId) {
+                return res.status(400).json({ message: "Staff Id is required !" });
+            }
+
+            if (!mongoose.Types.ObjectId.isValid(staffId)) {
+                return res.status(400).json({ message: "Invalid Staff Id !" })
+            }
+
+            const staff = await staffModel.findById(staffId);
+
+            if (!staff) {
+                return res.status(404).json({ message: "Staff No found !" });
+            }
+
+            const branchId = staff.branch;
+            const classId = staff.class;
+            const teacherId = staff.teacher;
+
+            if (staff.employeeRole === "teacher" && teacherId) {
+                await teacherModel.findByIdAndDelete(teacherId);
+
+                if (classId) {
+                    await classModel.findByIdAndUpdate(classId,{
+                        $pull: { teacher: teacherId }
+                    })
+                }
+
+                if (branchId) {
+                    await authSchoolBranchModel.findByIdAndUpdate(branchId, {
+                        $pull: { total_Teachers: teacherId }
+                    });
+                }
+            }
+
+            await staffModel.findByIdAndDelete(staffId);
+
+            if (branchId) {
+                await authSchoolBranchModel.findByIdAndUpdate(branchId, {
+                    $pull: { total_Staff: staffId }
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                message: 'Staff deleted successfully.'
+            });
+
+        } catch (error) {
+            console.error("Error deleting staff:", error);
+            return res.status(500).json({ message: error.message });
         }
     }
 }
