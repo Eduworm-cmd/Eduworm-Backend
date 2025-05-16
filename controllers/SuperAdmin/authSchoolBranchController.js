@@ -485,6 +485,11 @@ const DeleteBranch = async (req, res) => {
     if (!branch) {
       return res.status(404).json({ message: "Branch not found" });
     }
+
+    await schoolModel.updateMany(
+      { branches: branchId },
+      { $pull: { branches: branchId } }
+    )
     return res.status(200).json({ message: "Branch deleted successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
