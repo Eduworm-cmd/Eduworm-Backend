@@ -13,7 +13,7 @@ const StaffSchema = new mongoose.Schema({
   gender: { type: String, required: [true, 'Gender is required!'] },
   employeeRole: {
     type: String,
-    enum: ['staff', 'teacher'],
+    enum: ['staff', 'teacher','contentcreator'],
     required: [true, 'Employee Role is required!']
   },
   department: { type: String, required: [true, 'Department is required!'] },

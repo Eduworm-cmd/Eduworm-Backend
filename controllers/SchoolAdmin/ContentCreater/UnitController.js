@@ -37,9 +37,31 @@ const createUnit = async (req, res) => {
         console.error(error);
         return res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
-}
+};
+
+const GetUnitsByClassId = async (req, res) => {
+    try {
+        const { classId } = req.params;
+
+        const Class = await classModel.findById(classId);
+        if (!Class) {
+            return res.status(404).json({ error: "Class not found" });
+        }
+
+        // Just select the fields you need, no populate needed
+        const units = await UnitModel.find({ classId }).select("name");
+        if (!units || units.length === 0) {
+            return res.status(404).json({ error: "Units not found" });
+        }
+
+        res.status(200).json({ success: true, data: units });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
 
 module.exports = {
-    createUnit
+    createUnit,
+    GetUnitsByClassId,
 }
