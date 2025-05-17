@@ -16,6 +16,9 @@ const schoolRoutes = require('./routes/SuperAdmin/schoolRoutes');
 const classRoutes = require('./routes/SuperAdmin/classRoutes');
 const studentsRoutes = require('./routes/SuperAdmin/studentRoutes');
 const staffRoutes = require('./routes/SchoolAdmin/staffRoutes');
+const unitRoutes = require('./routes/SchoolAdmin/ContentCreate/unitRoutes');
+const DayRoutes = require('./routes/SchoolAdmin/ContentCreate/DayRoutes');
+const LessonRoutes = require('./routes/SchoolAdmin/ContentCreate/LessonRoute');
 
 dotenv.config();
 
@@ -36,6 +39,9 @@ connectDB();
 app.use("/api/auth_SchoolBranch", authSchoolBranchRoutes);
 app.use("/api/superadmin-auth", superAdminAuthRoutes);
 app.use("/api/grade", gradeRoutes);
+app.use("/api/unit", unitRoutes);
+app.use("/api/Day", DayRoutes);
+app.use("/api/Lesson", LessonRoutes);
 app.use("/api/level", levelRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api", playlistRoutes);

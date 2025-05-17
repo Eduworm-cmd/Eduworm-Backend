@@ -55,6 +55,7 @@ const ClassSchema = new Schema(
       default: Date.now,
     },
   },
+  
   {
     timestamps: true,
   }
