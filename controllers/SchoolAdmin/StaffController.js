@@ -164,9 +164,9 @@ class StaffController {
 
             const totalPages = Math.ceil(totalStaff / limit);
 
-            if (!staff || staff.length === 0) {
-                return res.status(404).json({ message: 'No staff found for this branch.' });
-            }
+            // if (!staff || staff.length === 0) {
+            //     return res.status(404).json({ message: 'No staff found for this branch.' });
+            // }
 
             return res.status(200).json({
                 success: true,
@@ -357,7 +357,7 @@ class StaffController {
                 await teacherModel.findByIdAndDelete(teacherId);
 
                 if (classId) {
-                    await classModel.findByIdAndUpdate(classId,{
+                    await classModel.findByIdAndUpdate(classId, {
                         $pull: { teacher: teacherId }
                     })
                 }
@@ -386,6 +386,39 @@ class StaffController {
             return res.status(500).json({ message: error.message });
         }
     }
+
+    getOverAllStaffs = async (req, res) => {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const skip = (page - 1) * limit;
+
+            const allStaff = await staffModel.find()
+                .sort({ createdAt: -1 })
+                .limit(limit)
+                .skip(skip)
+                .populate({
+                    path: 'branch',
+                    select: 'name location'
+                })
+                .select('-password');
+
+
+            const totalStaff = await staffModel.countDocuments();
+
+            return res.status(200).json({
+                message: "Staff fetched successfully",
+                data: allStaff,
+                total: totalStaff,
+                page,
+                limit
+            });
+        } catch (error) {
+            console.error("Error fetching staff:", error);
+            return res.status(500).json({ message: error.message });
+        }
+    }
+
 }
 
 module.exports = new StaffController();

@@ -376,6 +376,8 @@ const loginWithEmailPassword = async (req, res) => {
 
 
 // Get All Schools With Full Details
+
+
 const getFullSchools = async (req, res) => {
   try {
     const allSchools = await Auth.find({ role: 'schooladmin' })
@@ -444,23 +446,6 @@ const getallBranches = async (req, res) => {
 
     const totalBranches = await SchoolAdmin.countDocuments(query);
 
-    for (let branch of branches) {
-      branch.grades = [];
-
-      if (branch.classes && branch.classes.length > 0) {
-        const classIds = branch.classes.map(cls => cls._id);
-
-        const grades = await gradeModel.find({
-          class: { $in: classIds },
-          branch: branch._id
-        })
-          .populate("class", "className")
-          .populate("school", "schoolName")
-          .lean();
-
-        branch.grades = grades;
-      }
-    }
 
     return res.status(200).json({
       message: "Branches fetched successfully",
@@ -600,6 +585,13 @@ const updateBranch = async (req, res) => {
   } catch (error) {
     console.error("Error updating branch:", error);
     return res.status(500).json({ message: error.message });
+  }
+}
+
+const schoolBranchDropDown = async(req,res) =>{
+  try {
+  } catch (error) {
+    console.log(error);
   }
 }
 

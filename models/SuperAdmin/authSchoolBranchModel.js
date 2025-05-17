@@ -82,7 +82,11 @@ const SchoolAdminSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Class'
   }],
-  academicYear: String,
+  // academicYear: String,
+  academicYear:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:'AcademicYear'
+  },
   isActive: {
     type: Boolean,
     default: true
