@@ -19,6 +19,8 @@ const staffRoutes = require('./routes/SchoolAdmin/staffRoutes');
 const unitRoutes = require('./routes/SchoolAdmin/ContentCreate/unitRoutes');
 const DayRoutes = require('./routes/SchoolAdmin/ContentCreate/DayRoutes');
 const LessonRoutes = require('./routes/SchoolAdmin/ContentCreate/LessonRoute');
+const subjectRoutes = require('./routes/SuperAdmin/SubjectRoutes');
+const bookPageRoutes = require('./routes/SuperAdmin/bookPageRoute');
 
 dotenv.config();
 
@@ -52,7 +54,9 @@ app.use("/api", playlistRoutes);
 app.use('/api/school',schoolRoutes)
 app.use('/api/SA_Staff',SA_StaffRoutes);
 app.use('/api/academicYear',academicYearRoutes);
+app.use('/api/subject',subjectRoutes);
 app.use("/api/class",classRoutes);
+app.use("/api/bookPage",bookPageRoutes);
 app.use("/api/superStudent",studentsRoutes);
 
 
