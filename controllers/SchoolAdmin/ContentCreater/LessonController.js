@@ -15,81 +15,140 @@ const LessonCreate = async (req, res) => {
             title,
             subjectType,
             duration,
-            objective,
-            materials,
-            activity,
-            closure,
+            objectives, // raw array: [title1, value1, title2, value2, ...]
             interactiveActivity,
         } = req.body;
 
-        // Validate references
-        const Class = await classModel.findById(ClassId);
-        if (!Class) return res.status(404).json({ error: "Class not found" });
+        console.log('Received lesson data:', {
+            dayId,
+            ClassId,
+            UnitId,
+            title,
+            subjectType,
+            duration,
+            lessonAvatarExists: !!lessonAvatar,
+            lessonAvatarType: typeof lessonAvatar,
+            lessonAvatarLength: lessonAvatar ? lessonAvatar.length : 0
+        });
 
-        const unit = await UnitModel.findById(UnitId);
-        if (!unit) return res.status(404).json({ error: "Unit not found" });
+        // Validate required fields
+        if (!dayId || !ClassId || !UnitId || !title || !duration) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
 
-        const day = await DayModel.findById(dayId);
-        if (!day) return res.status(404).json({ error: "Day not found" });
+        // Check if lessonAvatar exists
+        if (!lessonAvatar) {
+            return res.status(400).json({ error: "Lesson avatar is required" });
+        }
 
-        // Upload lessonAvatar to Cloudinary
+        // Validate existence
+        const [foundClass, foundUnit, foundDay] = await Promise.all([
+            classModel.findById(ClassId),
+            UnitModel.findById(UnitId),
+            DayModel.findById(dayId),
+        ]);
+
+        if (!foundClass) return res.status(404).json({ error: "Class not found" });
+        if (!foundUnit) return res.status(404).json({ error: "Unit not found" });
+        if (!foundDay) return res.status(404).json({ error: "Day not found" });
+
+        // Upload avatar
         let lessonAvatarUrl = "";
-        try {
-            if (!lessonAvatar || lessonAvatar.length < 50) {
-                throw new Error("Invalid or missing lesson avatar image data");
-            }
-
-            const isDataUri = lessonAvatar.startsWith("data:image/");
-            const isUrl = lessonAvatar.startsWith("http");
-
-            const uploadSource = isDataUri
+        if (lessonAvatar && lessonAvatar.length > 50) {
+            const uploadSource = lessonAvatar.startsWith("data:image/")
                 ? lessonAvatar
-                : isUrl
+                : lessonAvatar.startsWith("http")
                     ? lessonAvatar
                     : `data:image/png;base64,${lessonAvatar}`;
 
-            const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
-                folder: "Lesson Avatars",
-            });
+            try {
+                const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
+                    folder: "Lesson Avatars",
+                });
+                lessonAvatarUrl = uploadResponse.secure_url;
+            } catch (uploadError) {
+                console.error("Avatar upload failed:", uploadError);
+                return res.status(400).json({ error: "Failed to upload avatar image", details: uploadError.message });
+            }
+        } else {
+            return res.status(400).json({ error: "Invalid or missing lesson avatar" });
+        }
 
-            lessonAvatarUrl = uploadResponse.secure_url;
-        } catch (uploadError) {
-            console.error("Cloudinary lessonAvatar upload error:", uploadError);
-            return res.status(500).json({
-                message: "lessonAvatar upload failed",
-                details:
-                    uploadError?.message || uploadError?.error?.message || "Unknown error",
+        // Convert flat objectives array to array of objects
+        if (!Array.isArray(objectives) || objectives.length % 2 !== 0) {
+            return res.status(400).json({ error: "Objectives must be a flat array with even number of items [title, value, ...]" });
+        }
+
+        if (interactiveActivity && !Array.isArray(interactiveActivity)) {
+            return res.status(400).json({ error: "Interactive activity must be an array of objects" });
+        }
+
+        const formattedObjectives = [];
+        for (let i = 0; i < objectives.length; i += 2) {
+            formattedObjectives.push({
+                objectiveTitle: objectives[i],  // Changed from 'objective' to 'objectiveTitle'
+                objectiveValue: objectives[i + 1],  // Changed from 'editorValue' to 'objectiveValue'
             });
         }
 
-        // Create lesson
-        const lesson = new LessonModel({
+        // Format interactive activities and handle poster uploads if needed
+        const formattedInteractiveActivity = await Promise.all((interactiveActivity || []).map(async (activity) => {
+            let posterUrl = null;
+
+            // Process poster image if it exists
+            if (activity.poster && activity.poster.length > 50) {
+                try {
+                    const uploadSource = activity.poster.startsWith("data:image/")
+                        ? activity.poster
+                        : activity.poster.startsWith("http")
+                            ? activity.poster
+                            : `data:image/png;base64,${activity.poster}`;
+
+                    const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
+                        folder: "Activity Posters",
+                    });
+                    posterUrl = uploadResponse.secure_url;
+                } catch (uploadError) {
+                    console.error("Poster upload failed:", uploadError);
+                    // Continue without poster if upload fails
+                }
+            }
+
+            return {
+                title: activity.title || '',
+                link: activity.link || '',
+                poster: posterUrl
+            };
+        }));
+
+        // Save lesson - match all required fields in your schema
+        const newLesson = new LessonModel({
             dayId,
             ClassId,
             UnitId,
             lessonAvatar: lessonAvatarUrl,
-            title,
+            lessonTitle: title,  // Changed from 'title' to 'lessonTitle'
             subjectType,
             duration,
-            objective,
-            materials,
-            activity,
-            closure,
-            interactiveActivity,
+            objectives: formattedObjectives,
+            interactiveActivity: formattedInteractiveActivity,
         });
 
-        await lesson.save();
+        await newLesson.save();
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: "Lesson created successfully",
-            data: lesson,
+            data: newLesson,
         });
     } catch (error) {
-        console.error("Lesson creation error:", error);
-        res.status(500).json({ error: error.message });
+        console.error("Lesson creation failed:", error);
+        return res.status(500).json({ error: "Internal server error", details: error.message });
     }
-  };
+};
+
+module.exports = { LessonCreate };
+  
 const GetLessonsByDay = async (req, res) =>{
     try {
         const {dayId} = req.params;
