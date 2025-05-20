@@ -146,8 +146,6 @@ const LessonCreate = async (req, res) => {
         return res.status(500).json({ error: "Internal server error", details: error.message });
     }
 };
-
-module.exports = { LessonCreate };
   
 const GetLessonsByDay = async (req, res) =>{
     try {
@@ -160,6 +158,41 @@ const GetLessonsByDay = async (req, res) =>{
         res.status(500).json({ error: error.message });
     }
 }
+
+const GetLessonsByDaysRange = async (req, res) => {
+    try {
+        let { startGlobalDay, limit } = req.query;
+        startGlobalDay = parseInt(startGlobalDay) || 1;
+        limit = parseInt(limit) || 7;
+        const endGlobalDay = startGlobalDay + limit - 1;
+
+        // 1. Days ko find karo jinke globalDayNumber is range mein hain
+        const days = await DayModel.find({
+            globalDayNumber: { $gte: startGlobalDay, $lte: endGlobalDay }
+        });
+
+        if (!days || days.length === 0) {
+            return res.status(404).json({ error: "No days found in this range" });
+        }
+
+        // 2. In days ke _id nikal lo
+        const dayIds = days.map(day => day._id);
+
+        // 3. Lessons find karo in dayIds ke against
+        const lessons = await LessonModel.find({
+            dayId: { $in: dayIds }
+        }).populate('UnitId').populate('ClassId').populate('dayId'); // Agar chahiye to populate
+
+        res.status(200).json({
+            success: true,
+            data: lessons,
+            nextStartGlobalDay: endGlobalDay + 1, // agla start day
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+  };
 
 const getLessonsAll = async (req, res) => {
     try {
@@ -177,5 +210,6 @@ const getLessonsAll = async (req, res) => {
 module.exports = {
     LessonCreate,
     GetLessonsByDay,
-    getLessonsAll
+    getLessonsAll,
+    GetLessonsByDaysRange
 }
