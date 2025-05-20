@@ -166,33 +166,38 @@ const GetLessonsByDaysRange = async (req, res) => {
         limit = parseInt(limit) || 7;
         const endGlobalDay = startGlobalDay + limit - 1;
 
-        // 1. Days ko find karo jinke globalDayNumber is range mein hain
+        // Step 1: Find days in the global day number range
         const days = await DayModel.find({
             globalDayNumber: { $gte: startGlobalDay, $lte: endGlobalDay }
-        });
+        }).select('_id');  // Sirf _id chahiye, baki fields nahi
 
-        if (!days || days.length === 0) {
+        if (!days.length) {
             return res.status(404).json({ error: "No days found in this range" });
         }
 
-        // 2. In days ke _id nikal lo
         const dayIds = days.map(day => day._id);
 
-        // 3. Lessons find karo in dayIds ke against
+        // Step 2: Find lessons exactly for these dayIds only
         const lessons = await LessonModel.find({
             dayId: { $in: dayIds }
-        }).populate('UnitId').populate('ClassId').populate('dayId'); // Agar chahiye to populate
+        })
+            .select('-__v -createdAt -updatedAt')  // Agar chaho toh unnecessary fields hatao
+            .lean();  // Plain JS objects for better performance and easier debugging
+
+        // Optional: Agar populate chahiye sirf kuch fields ke sath, toh explicit karo
+        // Otherwise yeh basic hai aur sirf lessons hi aaenge.
 
         res.status(200).json({
             success: true,
             data: lessons,
-            nextStartGlobalDay: endGlobalDay + 1, // agla start day
+            nextStartGlobalDay: endGlobalDay + 1,
         });
 
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-  };
+};
+  
 
 const getLessonsAll = async (req, res) => {
     try {
