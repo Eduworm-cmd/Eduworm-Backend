@@ -44,7 +44,7 @@ const staffSchema = new mongoose.Schema({
   school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
   branch: { type: mongoose.Schema.Types.ObjectId, ref: 'SchoolAdmin', required: true },
 
-  class: { type: mongoose.Schema.Types.ObjectId, ref: 'Class' },
+  class: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Class' }],
   teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' },
 }, { timestamps: true });
 

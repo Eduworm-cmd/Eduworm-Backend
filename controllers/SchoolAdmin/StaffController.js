@@ -195,6 +195,8 @@ class StaffController {
                 return res.status(400).json({ message: 'Invalid staff ID.' });
             }
             const staff = await staffModel.findById(staffId)
+                .populate('school','schoolName')
+                .populate('branch','name')
                 .populate('class', 'className')
                 .populate('teacher', 'teacherName')
                 .select('-password -__v');
