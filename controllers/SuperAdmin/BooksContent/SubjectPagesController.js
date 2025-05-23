@@ -67,7 +67,7 @@ const createSubjectPages = async (req, res) => {
             classId,
             SubjectId,
             title,
-            imageUrl: PageImageUrl 
+            imageUrl: PageImageUrl
         });
 
         await newBookPage.save();
@@ -93,8 +93,6 @@ const createSubjectPages = async (req, res) => {
 const getSubjectPagesBySubjectId = async (req, res) => {
     const { SubjectId } = req.params;
 
-    console.log(SubjectId);
-
     if (!mongoose.Types.ObjectId.isValid(SubjectId)) {
         return res.status(400).json({ success: false, message: "Invalid Subject ID" });
     }
@@ -112,8 +110,51 @@ const getSubjectPagesBySubjectId = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 }
-  
+
+const getAllPagesBySubjectId = async (req, res) => {
+    try {
+        const { subjectId } = req.params;
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (page - 1) * limit;
+
+        if (!subjectId) {
+            return res.status(400).json({ success: false, message: "SubjectId is required" });
+        }
+        if (!mongoose.Types.ObjectId.isValid(subjectId)) {
+            return res.status(400).json({ success: false, message: "Invalid Subject ID" });
+        }
+
+        const existSubject = await subjectModel.findById(subjectId);
+        if (!existSubject) {
+            return res.status(404).json({ success: false, message: "Subject not found" });
+        }
+
+        const subjectPages = await SubjectPagesModel.find()
+            .populate('SubjectId','title')
+            .where({ SubjectId: subjectId })
+            .skip(skip)
+            .limit(limit);
+            
+        const totalPages = await SubjectPagesModel.countDocuments({ SubjectId: subjectId });
+        const totalPagesCount = Math.ceil(totalPages / limit);
+
+        return res.status(200).json({
+            success: true,
+            data: subjectPages,
+            pagination: {
+                totalPages: totalPagesCount,
+                currentPage: page,
+                totalItems: totalPages
+            }
+        }); 
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
 module.exports = {
     createSubjectPages,
-    getSubjectPagesBySubjectId
+    getSubjectPagesBySubjectId,
+    getAllPagesBySubjectId,
 };

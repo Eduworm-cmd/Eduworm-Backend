@@ -57,7 +57,7 @@ app.use('/api/SA_Staff',SA_StaffRoutes);
 app.use('/api/academicYear',academicYearRoutes);
 app.use('/api/subject',subjectRoutes);
 app.use("/api/class",classRoutes);
-app.use("/api/bookPage",SubjectPageRoutes);
+app.use("/api/subjectPage",SubjectPageRoutes);
 app.use("/api/subject_PageContent",SubjectPageContentRoutes);
 app.use("/api/superStudent",studentsRoutes);
 
