@@ -2,6 +2,8 @@ const SubjectPagesModel = require("../../../models/SuperAdmin/BookConetnt/Subjec
 const subjectModel = require("../../../models/SuperAdmin/BookConetnt/subjectModel");
 const cloudinary = require("../../../config/cloudinary");
 const classModel = require("../../../models/SuperAdmin/classModel");
+const { default: mongoose } = require("mongoose");
+
 
 const createSubjectPages = async (req, res) => {
     try {
@@ -68,6 +70,8 @@ const createSubjectPages = async (req, res) => {
             imageUrl: PageImageUrl 
         });
 
+        await newBookPage.save();
+
         existSubject.SubjectPage.push(newBookPage._id);
         await existSubject.save();
 
@@ -86,6 +90,30 @@ const createSubjectPages = async (req, res) => {
     }
 };
 
+const getSubjectPagesBySubjectId = async (req, res) => {
+    const { SubjectId } = req.params;
+
+    console.log(SubjectId);
+
+    if (!mongoose.Types.ObjectId.isValid(SubjectId)) {
+        return res.status(400).json({ success: false, message: "Invalid Subject ID" });
+    }
+
+    try {
+        const existSubject = await subjectModel.findById(SubjectId);
+        if (!existSubject) {
+            return res.status(404).json({ success: false, message: "Subject not found" });
+        }
+
+        const subjectPages = await SubjectPagesModel.find({ SubjectId }).select("title");
+        return res.status(200).json({ success: true, data: subjectPages });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+  
 module.exports = {
-    createSubjectPages
+    createSubjectPages,
+    getSubjectPagesBySubjectId
 };

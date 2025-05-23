@@ -6,6 +6,7 @@ const router = express.Router();
 
 
 router.post('/create', SubjectPageController.createSubjectPages);
+router.get('/:SubjectId', SubjectPageController.getSubjectPagesBySubjectId);
 
 
 
