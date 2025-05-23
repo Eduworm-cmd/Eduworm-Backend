@@ -1,6 +1,7 @@
-const cloudinary = require("../../config/cloudinary");
-const classModel = require("../../models/SuperAdmin/classModel");
-const subjectModel = require("../../models/SuperAdmin/subjectModel");
+const cloudinary = require("../../../config/cloudinary");
+
+const subjectModel = require("../../../models/SuperAdmin/BookConetnt/subjectModel");
+const classModel = require("../../../models/SuperAdmin/classModel");
 
 const createSubject = async (req, res) => {
     try {

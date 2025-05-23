@@ -19,8 +19,8 @@ const staffRoutes = require('./routes/SchoolAdmin/staffRoutes');
 const unitRoutes = require('./routes/SchoolAdmin/ContentCreate/unitRoutes');
 const DayRoutes = require('./routes/SchoolAdmin/ContentCreate/DayRoutes');
 const LessonRoutes = require('./routes/SchoolAdmin/ContentCreate/LessonRoute');
-const subjectRoutes = require('./routes/SuperAdmin/SubjectRoutes');
-const bookPageRoutes = require('./routes/SuperAdmin/SubjectPageRoute');
+const subjectRoutes = require('./routes/SuperAdmin/BookContent/SubjectRoutes');
+const bookPageRoutes = require('./routes/SuperAdmin/BookContent/SubjectPageRoute');
 
 dotenv.config();
 

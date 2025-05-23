@@ -1,5 +1,5 @@
 const express = require('express');
-const SubjectPageController = require('../../controllers/SuperAdmin/SubjectPagesController');
+const SubjectPageController = require('../../../controllers/SuperAdmin/BooksContent/SubjectPagesController');
 const router = express.Router();
 
 
