@@ -10,13 +10,18 @@ const unitSchema = new mongoose.Schema({
         type : String,
         required : true
     },
+    days:[{type: mongoose.Schema.Types.ObjectId, ref: "Day", required: true}],
     totalDays :{
         type : Number,
         required : true
     },
     startDayNumber:{
         type: Number,
-    }
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+      },
 })
 
 

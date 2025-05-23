@@ -5,6 +5,10 @@ const cloudinary = require("../../config/cloudinary");
 const mongoose = require("mongoose");
 const gradeModel = require("../../models/SuperAdmin/gradeModel");
 const schoolModel = require("../../models/SuperAdmin/schoolModel");
+const classModel = require("../../models/SuperAdmin/classModel");
+const UnitModel = require("../../models/SchoolAdmin/ContentCreateModels/UnitModel");
+const DayModel = require("../../models/SchoolAdmin/ContentCreateModels/DayModel");
+const LessonModel = require("../../models/SchoolAdmin/ContentCreateModels/LessonModel");
 
 
 const generateToken = (user) => {
@@ -100,6 +104,9 @@ const createSchoolBranch = async (req, res) => {
       classes,
       academicYear,
       isActive,
+      // You can optionally allow these to be passed in the request
+      contentStarted,
+      contentStartDate,
     } = req.body;
 
     // Basic validations
@@ -153,7 +160,7 @@ const createSchoolBranch = async (req, res) => {
       });
     }
 
-    // Create new branch
+    // Create new branch - ADD the contentStartData field here
     const newBranch = new SchoolAdmin({
       school,
       name,
@@ -175,6 +182,11 @@ const createSchoolBranch = async (req, res) => {
       classes,
       academicYear,
       isActive,
+      // Add contentStartData with provided values or defaults
+      contentStartData: {
+        contentStarted: contentStarted ?? false,
+        contentStartDate: contentStartDate ? new Date(contentStartDate) : null
+      }
     });
 
     const savedBranch = await newBranch.save();
@@ -196,6 +208,8 @@ const createSchoolBranch = async (req, res) => {
         displayName: savedBranch.displayName,
         logoUrl: savedBranch.branchLogo,
         role: savedBranch.role,
+        // Include contentStartData in the response
+        contentStartData: savedBranch.contentStartData
       }
     });
   } catch (error) {
@@ -539,6 +553,132 @@ const getBranchesById = async (req, res) => {
   }
 }
 
+
+const calculateDayVisibility = async (branchId) => {
+  try {
+    // Get branch details
+    const branch = await SchoolAdmin.findById(branchId);
+    if (!branch || !branch.contentStartData || !branch.contentStartData.contentStarted) {
+      return false;
+    }
+
+    const startDate = new Date(branch.contentStartData.contentStartDate);
+    if (!startDate) return false;
+
+    // Get all classes for this branch
+    const classes = await classModel.find({ branch: branchId, isActive: true });
+
+    for (const classObj of classes) {
+      // Get all units for this class
+      const units = await UnitModel.find({ classId: classObj._id }).sort({ startDayNumber: 1 });
+
+      let currentDate = new Date(startDate);
+      let currentDayNumber = 1;
+
+      for (const unit of units) {
+        // Get days for this unit
+        const days = await DayModel.find({ unitId: unit._id }).sort({ globalDayNumber: 1 });
+
+        // If no days exist, create them
+        if (days.length === 0) {
+          const totalDays = unit.totalDays;
+          const newDays = [];
+
+          for (let i = 0; i < totalDays; i++) {
+            // Skip weekends (Saturday and Sunday)
+            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+              currentDate = new Date(currentDate);
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            const weekNumber = Math.ceil(i / 5) + (unit.startDayNumber ? Math.floor(unit.startDayNumber / 5) : 0);
+
+            newDays.push({
+              unitId: unit._id,
+              globalDayNumber: currentDayNumber,
+              week: weekNumber,
+              calendarDate: new Date(currentDate),
+              isVisible: new Date() >= currentDate
+            });
+
+            currentDayNumber++;
+            currentDate = new Date(currentDate);
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+
+          if (newDays.length > 0) {
+            await Day.insertMany(newDays);
+          }
+        } else {
+          // Update existing days
+          for (const day of days) {
+            // Skip weekends (Saturday and Sunday)
+            while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+              currentDate = new Date(currentDate);
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            day.calendarDate = new Date(currentDate);
+            day.isVisible = new Date() >= currentDate;
+            await day.save();
+
+            currentDate = new Date(currentDate);
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        }
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error calculating day visibility:", error);
+    return false;
+  }
+};
+
+
+
+const updateBranchContentSettings = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    const { contentStarted, contentStartDate } = req.body;
+
+    // Use findByIdAndUpdate instead of findById and manual save
+    const updatedBranch = await SchoolAdmin.findByIdAndUpdate(
+      branchId,
+      {
+        $set: {
+          'contentStartData.contentStarted': contentStarted === "true" || contentStarted === true ? true : false,
+          'contentStartData.contentStartDate': contentStartDate ? new Date(contentStartDate) : null
+        }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedBranch) {
+      return res.status(404).json({ success: false, message: "Branch not found" });
+    }
+
+    // If content is started, calculate and update the day visibility
+    if (contentStarted && contentStartDate) {
+      await calculateDayVisibility(branchId);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Branch content settings updated",
+      data: updatedBranch.contentStartData
+    });
+  } catch (error) {
+    console.error("Error updating branch content settings:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update branch content settings",
+      error: error.message
+    });
+  }
+};
+
 const searchBySchoolName = async (req, res) => {
   try {
     const { name } = req.query;
@@ -568,6 +708,217 @@ const searchBySchoolName = async (req, res) => {
   }
 };
 
+
+
+const getBranchContent = async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    const branch = await mongoose.model("SchoolAdmin").findById(branchId)
+      .populate({
+        path: 'classes',
+        populate: {
+          path: 'units',
+          populate: {
+            path: 'days',
+            match: { isVisible: true },
+            populate: 'lessons'
+          }
+        }
+      });
+
+    // 2. Check content start date
+    const today = new Date();
+    const startDate = new Date(branch.contentStartData.contentStartDate);
+
+    if (today < startDate) {
+      return res.json({
+        success: true,
+        message: `Content starts on ${startDate.toLocaleDateString()}`,
+        data: { classes: [], units: [], days: [], lessons: [] }
+      });
+    }
+
+    // 3. Calculate working days (Mon-Fri only)
+    let workingDays = 0;
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= today) {
+      const day = currentDate.getDay(); // 0=Sun, 6=Sat
+      if (day !== 0 && day !== 6) workingDays++;
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // 4. Prepare response
+    const response = { classes: [], units: [], days: [], lessons: [] };
+    let totalDaysProcessed = 0;
+
+    branch.classes.forEach(cls => {
+      response.classes.push(cls._id);
+
+      cls.units?.forEach(unit => {
+        if (totalDaysProcessed < workingDays) {
+          response.units.push(unit._id);
+
+          unit.days?.forEach(day => {
+            if (day.globalDayNumber <= workingDays) {
+              response.days.push(day._id);
+              response.lessons.push(...(day.lessons || []));
+            }
+          });
+        }
+        totalDaysProcessed += unit.totalDays;
+      });
+    });
+
+    return res.json({ success: true, data: response });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+// Helper function
+function formatResponse(classes, includeAll = false) {
+  const result = {
+    classes: [],
+    units: [],
+    days: [],
+    lessons: []
+  };
+
+  classes.forEach(cls => {
+    if (!cls) return;
+    result.classes.push(cls._id);
+
+    if (cls.units && includeAll) {
+      cls.units.forEach(unit => {
+        if (!unit) return;
+        result.units.push(unit._id);
+
+        if (unit.days) {
+          unit.days.forEach(day => {
+            if (!day) return;
+            result.days.push(day._id);
+
+            if (day.lessons) {
+              day.lessons.forEach(lesson => {
+                result.lessons.push(lesson._id);
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+
+  return result;
+}
+
+// Helper function to format response
+function formatResponse(classes, showAll = false) {
+  const classIds = classes.map(c => c._id);
+  const unitIds = [];
+  const dayIds = [];
+  const lessonIds = [];
+
+  classes.forEach(cls => {
+    if (cls.units && cls.units.length) {
+      cls.units.forEach(unit => {
+        unitIds.push(unit._id);
+
+        if (unit.days && unit.days.length) {
+          unit.days.forEach(day => {
+            if (showAll || day.isVisible) {
+              dayIds.push(day._id);
+
+              if (day.lessons && day.lessons.length) {
+                day.lessons.forEach(lesson => {
+                  lessonIds.push(lesson._id);
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+  });
+
+  return {
+    classes: classIds,
+    units: unitIds,
+    days: dayIds,
+    lessons: lessonIds
+  };
+}
+
+// Helper function to process content visibility
+function processContentVisibility(classes, daysSinceStart) {
+  let cumulativeDays = 0;
+  const result = {
+    classes: classes.map(c => c._id),
+    units: [],
+    days: [],
+    lessons: []
+  };
+
+  // Flatten all units while maintaining order
+  const allUnits = [];
+  classes.forEach(cls => {
+    if (cls.units && cls.units.length) {
+      cls.units.forEach(unit => {
+        allUnits.push({
+          ...unit,
+          classId: cls._id
+        });
+      });
+    }
+  });
+
+  // Sort units by startDayNumber or creation date
+  allUnits.sort((a, b) => {
+    if (a.startDayNumber !== undefined && b.startDayNumber !== undefined) {
+      return a.startDayNumber - b.startDayNumber;
+    }
+    return a._id.toString().localeCompare(b._id.toString());
+  });
+
+  // Find current unit and days to show
+  for (const unit of allUnits) {
+    if (cumulativeDays + unit.totalDays > daysSinceStart) {
+      result.units.push(unit._id);
+
+      const daysCompletedInUnit = daysSinceStart - cumulativeDays;
+      const daysToShow = Math.min(5, unit.totalDays - daysCompletedInUnit);
+
+      // Get visible days sorted by globalDayNumber
+      const visibleDays = unit.days
+        .filter(day => day.isVisible)
+        .sort((a, b) => a.globalDayNumber - b.globalDayNumber)
+        .slice(0, daysToShow);
+
+      visibleDays.forEach(day => {
+        result.days.push(day._id);
+        if (day.lessons && day.lessons.length) {
+          day.lessons.forEach(lesson => {
+            result.lessons.push(lesson._id);
+          });
+        }
+      });
+
+      return result;
+    }
+    cumulativeDays += unit.totalDays;
+    result.units.push(unit._id); // Include all completed units
+  }
+
+  // All content completed - return everything
+  return formatResponse(classes, true);
+}
 const updateBranch = async (req, res) => {
   try {
     const branchId = req.params.branchId;
@@ -609,6 +960,8 @@ module.exports = {
   createSchoolBranch,
   loginWithEmailPassword,
   getBranchesById,
-  searchBySchoolName
+  searchBySchoolName,
+  updateBranchContentSettings,
+  getBranchContent,
   // createSchoolAdminBySuperAdmin
 };

@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-
 const lessonSchema = new mongoose.Schema({
     UnitId: { type: mongoose.Schema.Types.ObjectId, ref: "Unit", required: true },
     ClassId: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
