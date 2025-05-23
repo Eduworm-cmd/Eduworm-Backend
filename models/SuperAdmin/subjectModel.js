@@ -10,6 +10,7 @@ const subjectSchema = new mongoose.Schema({
     },
     title:{type:String,required:true},
    imageUrl:{type:String,required:true},
+    SubjectPage: [{ type: mongoose.Schema.Types.ObjectId, ref:"SubjectPage"}],
 },{timestamps:true})
 
 

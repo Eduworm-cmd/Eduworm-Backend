@@ -6,12 +6,12 @@ const createSubject = async (req, res) => {
     try {
         const { classId, title, imageUrl } = req.body;
 
-        // Input validation
+       
         if (!classId || !title || !imageUrl) {
             return res.status(400).json({ success: false, message: "classId, title, and imageUrl are required" });
         }
 
-        // Check if class exists
+      
         const existClass = await classModel.findById(classId);
         if (!existClass) {
             return res.status(404).json({ success: false, message: "Class not found" });
@@ -19,7 +19,7 @@ const createSubject = async (req, res) => {
 
         let subjectImageUrl = "";
 
-        // Upload image if it's a data URI or base64
+        
         if (imageUrl.length > 50) {
             const uploadSource = imageUrl.startsWith("data:image/")
                 ? imageUrl
@@ -38,15 +38,18 @@ const createSubject = async (req, res) => {
                 return res.status(400).json({ success: false, message: "Failed to upload image", details: uploadError.message });
             }
         } else {
-            subjectImageUrl = imageUrl; // if it's a valid short URL or identifier
+            subjectImageUrl = imageUrl; 
         }
 
-        // Create subject
+
         const newSubject = await subjectModel.create({
             classId,
             title,
             imageUrl: subjectImageUrl
         });
+
+        existClass.subject.push(newSubject._id);
+        await existClass.save();
 
         return res.status(200).json({ success: true, message: "Subject created successfully", data: newSubject });
 
@@ -56,4 +59,21 @@ const createSubject = async (req, res) => {
     }
 };
 
-module.exports = { createSubject };
+
+const getSubjectsByClassId = async(req,res) =>{
+    const {classId} = req.params;
+
+    try {
+        const existClass = await classModel.findById(classId);
+        if (!existClass) {
+            return res.status(404).json({ success: false, message: "Class not found" });
+        }
+        const subjects = await subjectModel.find({classId}).select("title");
+
+        return res.status(200).json({success:true,data:subjects});
+    } catch (error) {
+        
+    }
+}
+
+module.exports = { createSubject, getSubjectsByClassId };

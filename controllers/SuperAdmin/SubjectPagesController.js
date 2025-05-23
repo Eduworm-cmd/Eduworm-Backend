@@ -1,16 +1,26 @@
-const bookPagesModel = require("../../models/SuperAdmin/bookPagesModel");
+const SubjectPagesModel = require("../../models/SuperAdmin/SubjectPagesModel");
 const subjectModel = require("../../models/SuperAdmin/subjectModel");
 const cloudinary = require("../../config/cloudinary");
+const classModel = require("../../models/SuperAdmin/classModel");
 
-const createBookPages = async (req, res) => {
+const createSubjectPages = async (req, res) => {
     try {
-        const { SubjectId, title, imageUrl } = req.body;
+        const { SubjectId, classId, title, imageUrl } = req.body;
 
         // Validate inputs
-        if (!SubjectId || !title || !imageUrl) {
+        if (!SubjectId || !title || !imageUrl || !classId) {
             return res.status(400).json({
                 success: false,
                 message: "SubjectId, title, and imageUrl are required"
+            });
+        }
+
+
+        const existClass = await classModel.findById(classId);
+        if (!existClass) {
+            return res.status(404).json({
+                success: false,
+                message: "Class not found"
             });
         }
 
@@ -51,13 +61,15 @@ const createBookPages = async (req, res) => {
         }
 
         // Create and save new book page
-        const newBookPage = new bookPagesModel({
+        const newBookPage = new SubjectPagesModel({
+            classId,
             SubjectId,
             title,
             imageUrl: PageImageUrl 
         });
 
-        await newBookPage.save();
+        existSubject.SubjectPage.push(newBookPage._id);
+        await existSubject.save();
 
         return res.status(201).json({
             success: true,
@@ -75,5 +87,5 @@ const createBookPages = async (req, res) => {
 };
 
 module.exports = {
-    createBookPages
+    createSubjectPages
 };

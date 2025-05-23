@@ -1,6 +1,18 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// ✅ Updated contentStartSchema with both flags and date
+const contentStartSchema = new mongoose.Schema({
+  contentStarted: {
+    type: Boolean,
+    default: false
+  },
+  contentStartDate: {
+    type: Date,
+    default: null
+  }
+}, { _id: false });
+
 const SchoolAdminSchema = new mongoose.Schema({
   school: {
     type: mongoose.Schema.Types.ObjectId,
@@ -66,7 +78,7 @@ const SchoolAdminSchema = new mongoose.Schema({
   },
   branchLogo: {
     type: String,
-    default: "" 
+    default: ""
   },
   fees: [{
     name: String,
@@ -82,44 +94,35 @@ const SchoolAdminSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Class'
   }],
-  // academicYear: String,
-  academicYear:{
+  academicYear: {
     type: mongoose.Schema.Types.ObjectId,
-    ref:'AcademicYear'
+    ref: 'AcademicYear'
   },
   isActive: {
     type: Boolean,
     default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+
+  // ✅ Updated structure with contentStarted + contentStartDate
+  contentStartData: contentStartSchema
+
 }, {
   timestamps: true
 });
 
+// Indexes for fast lookup
 SchoolAdminSchema.index({ "contact.email": 1 }, { sparse: true });
 SchoolAdminSchema.index({ "contact.phone": 1 }, { sparse: true });
 
+// 🔐 Pre-save hook to hash password
 SchoolAdminSchema.pre('save', async function (next) {
   const branch = this;
-
 
   if (!branch.isModified('branchPassword')) return next();
 
   try {
-
     const salt = await bcrypt.genSalt(10);
-
-
     const hashedPassword = await bcrypt.hash(branch.branchPassword, salt);
-
-
     branch.branchPassword = hashedPassword;
     next();
   } catch (error) {
@@ -127,7 +130,7 @@ SchoolAdminSchema.pre('save', async function (next) {
   }
 });
 
-
+// 🔑 Compare password method
 SchoolAdminSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.branchPassword);

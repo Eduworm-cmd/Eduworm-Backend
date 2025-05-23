@@ -15,6 +15,11 @@ const ClassSchema = new Schema(
       default: "General"
     },
 
+    units: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Unit'
+    }],
+
     branch: { type: mongoose.Schema.Types.ObjectId, ref: 'SchoolAdmin' },
     grades: [
       {

@@ -9,8 +9,11 @@ const {
   getallBranches,
   searchBySchoolName,
   updateBranch,
-  DeleteBranch
+  DeleteBranch,
+  updateBranchContentSettings,
+  getBranchContent
 } = require("../../controllers/SuperAdmin/authSchoolBranchController");
+
 
 const router = express.Router();
 
@@ -25,7 +28,11 @@ router.get("/allBranches", getallBranches);
 router.get("/branches/:branchId", getBranchesById);
 router.put("/UpdateBranch/:branchId", updateBranch);
 router.get("/:schoolId", getBranchesBySchoolId);
+// Branch content routes
+router.put('/branch/:branchId/content-settings', updateBranchContentSettings);
+router.get('/branch/:branchId/content', getBranchContent);
 router.delete("/DeleteBranch/:branchId", DeleteBranch);
+
 
 
 

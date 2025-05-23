@@ -3,6 +3,7 @@ const LessonModel = require("../../../models/SchoolAdmin/ContentCreateModels/Les
 const UnitModel = require("../../../models/SchoolAdmin/ContentCreateModels/UnitModel");
 const classModel = require("../../../models/SuperAdmin/classModel");
 const cloudinary = require("../../../config/cloudinary");
+const authSchoolBranchModel = require("../../../models/SuperAdmin/authSchoolBranchModel");
 
 
 const LessonCreate = async (req, res) => {
@@ -159,44 +160,10 @@ const GetLessonsByDay = async (req, res) =>{
     }
 }
 
-const GetLessonsByDaysRange = async (req, res) => {
-    try {
-        let { startGlobalDay, limit } = req.query;
-        startGlobalDay = parseInt(startGlobalDay) || 1;
-        limit = parseInt(limit) || 7;
-        const endGlobalDay = startGlobalDay + limit - 1;
 
-        // Step 1: Find days in the global day number range
-        const days = await DayModel.find({
-            globalDayNumber: { $gte: startGlobalDay, $lte: endGlobalDay }
-        }).select('_id');  // Sirf _id chahiye, baki fields nahi
 
-        if (!days.length) {
-            return res.status(404).json({ error: "No days found in this range" });
-        }
 
-        const dayIds = days.map(day => day._id);
 
-        // Step 2: Find lessons exactly for these dayIds only
-        const lessons = await LessonModel.find({
-            dayId: { $in: dayIds }
-        })
-            .select('-__v -createdAt -updatedAt')  // Agar chaho toh unnecessary fields hatao
-            .lean();  // Plain JS objects for better performance and easier debugging
-
-        // Optional: Agar populate chahiye sirf kuch fields ke sath, toh explicit karo
-        // Otherwise yeh basic hai aur sirf lessons hi aaenge.
-
-        res.status(200).json({
-            success: true,
-            data: lessons,
-            nextStartGlobalDay: endGlobalDay + 1,
-        });
-
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-};
   
 
 const getLessonsAll = async (req, res) => {
@@ -216,5 +183,5 @@ module.exports = {
     LessonCreate,
     GetLessonsByDay,
     getLessonsAll,
-    GetLessonsByDaysRange
+
 }

@@ -20,7 +20,7 @@ const unitRoutes = require('./routes/SchoolAdmin/ContentCreate/unitRoutes');
 const DayRoutes = require('./routes/SchoolAdmin/ContentCreate/DayRoutes');
 const LessonRoutes = require('./routes/SchoolAdmin/ContentCreate/LessonRoute');
 const subjectRoutes = require('./routes/SuperAdmin/SubjectRoutes');
-const bookPageRoutes = require('./routes/SuperAdmin/bookPageRoute');
+const bookPageRoutes = require('./routes/SuperAdmin/SubjectPageRoute');
 
 dotenv.config();
 

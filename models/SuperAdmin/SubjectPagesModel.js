@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 
 const bookPagesSchema = new mongoose.Schema({
+    classId : {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : "Class",
+        required : true
+    },
     SubjectId :{
         type : mongoose.Schema.Types.ObjectId,
         ref : "Subject",
@@ -12,4 +17,4 @@ const bookPagesSchema = new mongoose.Schema({
 },{timestamps:true})
 
 
-module.exports = mongoose.model("BookPages", bookPagesSchema);
+module.exports = mongoose.model("SubjectPage", bookPagesSchema);
