@@ -1,5 +1,5 @@
 const express = require('express');
-const SubjectController = require('../../controllers/SuperAdmin/SubjectController');
+const SubjectController = require('../../../controllers/SuperAdmin/BooksContent/SubjectController');
 const router = express.Router();
 
 router.post('/create', SubjectController.createSubject);
