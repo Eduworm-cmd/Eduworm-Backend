@@ -78,5 +78,64 @@ const getSubjectsByClassId = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal Server Error", details: error.message });
     }
 }
+const deleteSubjectById = async (req, res) => {
+    const { subjectId } = req.params;
+    try {
+        // Convert subjectId to ObjectId for consistent comparison
+        const subjectObjectId = new mongoose.Types.ObjectId(subjectId);
 
-module.exports = { createSubject, getSubjectsByClassId };
+        // Find the subject and get classId reference
+        const subject = await subjectModel.findById(subjectObjectId);
+        if (!subject) {
+            return res.status(404).json({ success: false, message: "Subject not found" });
+        }
+
+        // Verify the class exists
+        const classExists = await classModel.findById(subject.classId);
+        if (!classExists) {
+            return res.status(404).json({ success: false, message: "Associated class not found" });
+        }
+
+        // Start a session for transaction
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            // Delete the subject
+            await subjectModel.findByIdAndDelete(subjectObjectId, { session });
+
+            // Remove subject reference from class
+            const updatedClass = await classModel.findByIdAndUpdate(
+                subject.classId,
+                { $pull: { subjects: subjectObjectId } },
+                { new: true, session }
+            );
+
+            // Verify the subject was removed from class
+            if (updatedClass.subjects.includes(subjectObjectId)) {
+                throw new Error("Subject reference not removed from class");
+            }
+
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(200).json({
+                success: true,
+                message: "Subject deleted successfully and removed from class"
+            });
+        } catch (transactionError) {
+            await session.abortTransaction();
+            session.endSession();
+            throw transactionError;
+        }
+    } catch (error) {
+        console.error("Error deleting subject:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            details: error.message
+        });
+    }
+};
+
+module.exports = { createSubject, getSubjectsByClassId, deleteSubjectById };
