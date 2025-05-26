@@ -4,6 +4,7 @@ const UnitModel = require("../../../models/SchoolAdmin/ContentCreateModels/UnitM
 const classModel = require("../../../models/SuperAdmin/classModel");
 const cloudinary = require("../../../config/cloudinary");
 const authSchoolBranchModel = require("../../../models/SuperAdmin/authSchoolBranchModel");
+const { default: mongoose } = require("mongoose");
 
 
 const LessonCreate = async (req, res) => {
@@ -177,11 +178,31 @@ const getLessonsAll = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 }
+const getLessonById = async (req, res) => {
+    try {
+        const { lessonId } = req.params;
+        if (!lessonId) {
+            return res.status(400).json({ error: "Lesson ID is required" });
+        }
+        if (!mongoose.Types.ObjectId.isValid(lessonId)) {
+            return res.status(400).json({ error: "Invalid Lesson ID" });
+        }
+        const lessons = await LessonModel.findById(lessonId);
+        if (!lessons) {
+            return res.status(404).json({ error: "Lessons not found" });
+        }
+        res.status(200).json({ success: true, data: lessons });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+
 
 
 module.exports = {
     LessonCreate,
     GetLessonsByDay,
     getLessonsAll,
-
+    getLessonById
 }

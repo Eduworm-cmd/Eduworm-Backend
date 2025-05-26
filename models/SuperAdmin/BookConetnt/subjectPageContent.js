@@ -19,7 +19,7 @@ const subjectPageContentSchema = new mongoose.Schema({
         required: true
     },
     contentAvtar: { type: String, required: true },
-    title: { type: String, required: true },
+    title: { type: String, required: true, unique: true },
     duration: { type: String, required: true },
     shcedule: {
         type: String,
@@ -31,9 +31,9 @@ const subjectPageContentSchema = new mongoose.Schema({
         }
     ],
     interactiveActivity: [{
-        title: { type: String },
-        link: { type: String },
-        poster: { type: String },
+        title: { type: String, required: true },
+        link: { type: String, required: true },
+        poster: { type: String, required: true },
     }]
 
 

@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const subjectModel = require("../../../models/SuperAdmin/BookConetnt/subjectModel");
 const subjectPageContentModel = require("../../../models/SuperAdmin/BookConetnt/subjectPageContent");
 const SubjectPagesModel = require("../../../models/SuperAdmin/BookConetnt/SubjectPagesModel");
@@ -31,6 +32,23 @@ const createSubjectPageContent = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "contentAvtar is required and must be a valid string"
+            });
+        }
+
+        const existingTitle = await subjectPageContentModel.findOne({ title: title });
+        if (existingTitle) {
+            return res.status(400).json({
+                success: false,
+                message: "Title already exists"
+            });
+        }
+
+        // ✅ Prevent multiple content entries for the same SubjectPageId
+        const existingContent = await subjectPageContentModel.findOne({ SubjectPageId });
+        if (existingContent) {
+            return res.status(400).json({
+                success: false,
+                message: "Contnent is already created for this Page !"
             });
         }
 
@@ -132,7 +150,7 @@ const createSubjectPageContent = async (req, res) => {
                         posterUrl = uploadResult.secure_url;
                     } catch (uploadError) {
                         console.warn("Failed to upload activity poster:", uploadError.message);
-                        posterUrl = activity.poster; // Fallback to original if upload fails
+                        posterUrl = activity.poster;
                     }
                 } else {
                     posterUrl = activity.poster;
@@ -181,6 +199,41 @@ const createSubjectPageContent = async (req, res) => {
     }
 };
 
+const getContentByPageId = async (req,res) =>{
+    const {pageId} = req.params;
+    try{
+        if(!pageId) {
+            return res.status(400).json({ success: false,message: "Page ID is required"});
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(pageId)) {
+            return res.status(400).json({ success: false, message: "Invalid Page ID" });
+        }
+
+        const content = await subjectPageContentModel.find({SubjectPageId:pageId});
+        console.log("Content:", content);
+        
+        if (!content) {
+            return res.status(404).json({ success: false, message: "Content not found for this Page ID" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Content retrieved successfully",
+            data: content
+        });
+
+    }catch (error) {
+        console.error("Error in getContentByPageId:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to retrieve content",
+            error: error.message
+        });
+    }
+}
+
 module.exports = {
-    createSubjectPageContent
+    createSubjectPageContent,
+    getContentByPageId
 };
