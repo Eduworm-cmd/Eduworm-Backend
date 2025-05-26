@@ -103,7 +103,7 @@ const getSubjectPagesBySubjectId = async (req, res) => {
             return res.status(404).json({ success: false, message: "Subject not found" });
         }
 
-        const subjectPages = await SubjectPagesModel.find({ SubjectId }).select("title");
+        const subjectPages = await SubjectPagesModel.find({ SubjectId }).select("title imageUrl");
         return res.status(200).json({ success: true, data: subjectPages });
 
     } catch (error) {
