@@ -178,6 +178,7 @@ const getLessonsAll = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 }
+
 const getLessonById = async (req, res) => {
     try {
         const { lessonId } = req.params;
