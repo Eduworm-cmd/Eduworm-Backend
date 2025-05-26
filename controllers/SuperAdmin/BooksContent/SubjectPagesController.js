@@ -103,8 +103,11 @@ const getSubjectPagesBySubjectId = async (req, res) => {
             return res.status(404).json({ success: false, message: "Subject not found" });
         }
 
-        const subjectPages = await SubjectPagesModel.find({ SubjectId }).select("title imageUrl");
-        return res.status(200).json({ success: true, data: subjectPages });
+        const subjectPages = await SubjectPagesModel.find({ SubjectId }).select("title imageUrl subjectPage").populate('SubjectId','title imageUrl');
+
+        const subjectPageCount = await SubjectPagesModel.countDocuments({ SubjectId });
+        
+        return res.status(200).json({ success: true, data: subjectPages , pages: subjectPageCount});
 
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

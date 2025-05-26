@@ -232,8 +232,42 @@ const getContentByPageId = async (req,res) =>{
         });
     }
 }
+const getContentByLessonId = async (req,res) =>{
+    const {lessonId} = req.params;
+    try{
+        if (!lessonId) {
+            return res.status(400).json({ success: false,message: "Page ID is required"});
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(lessonId)) {
+            return res.status(400).json({ success: false, message: "Invalid Page ID" });
+        }
+
+        const content = await subjectPageContentModel.findById(lessonId);
+        console.log("Content:", content);
+        
+        if (!content) {
+            return res.status(404).json({ success: false, message: "Content not found for this Page ID" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Content retrieved successfully",
+            data: content
+        });
+
+    }catch (error) {
+        console.error("Error in getContentByPageId:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to retrieve content",
+            error: error.message
+        });
+    }
+}
 
 module.exports = {
     createSubjectPageContent,
-    getContentByPageId
+    getContentByPageId,
+    getContentByLessonId
 };
