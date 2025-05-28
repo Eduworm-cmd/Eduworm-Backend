@@ -195,7 +195,7 @@ const createSubjectPageContent = async (req, res) => {
             const { id } = req.params;
             try {
 
-                const subjectPageContent = await subjectPageContentModel.findById(id);
+                const subjectPageContent = await subjectPageContentModel.findById(id)
                 if (!subjectPageContent) {
                     return res.status(404).json({
                         success: false,
@@ -402,20 +402,22 @@ const getContentByPageId = async (req,res) =>{
         });
     }
 }
-const getContentByLessonId = async (req,res) =>{
-    const {lessonId} = req.params;
-    try{
+const getContentByLessonId = async (req, res) => {
+    const { lessonId } = req.params;
+    try {
         if (!lessonId) {
-            return res.status(400).json({ success: false,message: "Page ID is required"});
+            return res.status(400).json({ success: false, message: "Page ID is required" });
         }
 
         if (!mongoose.Types.ObjectId.isValid(lessonId)) {
             return res.status(400).json({ success: false, message: "Invalid Page ID" });
         }
 
-        const content = await subjectPageContentModel.findById(lessonId);
+        // Populating 'subjectId' field, fetching only 'title' from referenced document
+        const content = await subjectPageContentModel.findById(lessonId).populate('SubjectId', 'title');
+
         console.log("Content:", content);
-        
+
         if (!content) {
             return res.status(404).json({ success: false, message: "Content not found for this Page ID" });
         }
@@ -426,8 +428,8 @@ const getContentByLessonId = async (req,res) =>{
             data: content
         });
 
-    }catch (error) {
-        console.error("Error in getContentByPageId:", error);
+    } catch (error) {
+        console.error("Error in getContentByLessonId:", error);
         return res.status(500).json({
             success: false,
             message: "Failed to retrieve content",
@@ -435,6 +437,7 @@ const getContentByLessonId = async (req,res) =>{
         });
     }
 }
+  
 
 
 module.exports = {
