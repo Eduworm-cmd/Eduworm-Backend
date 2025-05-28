@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const cloudinary = require("../../../config/cloudinary");
 
 const subjectModel = require("../../../models/SuperAdmin/BookConetnt/subjectModel");
@@ -65,19 +66,25 @@ const getSubjectsByClassId = async (req, res) => {
     const { classId } = req.params;
 
     try {
-        const existClass = await classModel.findById(classId);
-        if (!existClass) {
-            return res.status(404).json({ success: false, message: "Class not found" });
+        if (!classId) {
+            return res.status(400).json({ success: false, message: "classId is required" });
         }
-        const subjects = await subjectModel.find({ classId })
-        .populate('classId', 'className');
+
+        if (!mongoose.Types.ObjectId.isValid(classId)) {
+            return res.status(400).json({ success: false, message: "Invalid classId format" });
+        }
+
+        const subjects = await subjectModel.find({ classId }).select("_id title");
+        // Optional: .populate('classId') or .populate('SubjectPage') if needed
 
         return res.status(200).json({ success: true, data: subjects });
     } catch (error) {
         console.error("Error", error);
         return res.status(500).json({ success: false, message: "Internal Server Error", details: error.message });
     }
-}
+};
+
+
 const deleteSubjectById = async (req, res) => {
     const { subjectId } = req.params;
     try {

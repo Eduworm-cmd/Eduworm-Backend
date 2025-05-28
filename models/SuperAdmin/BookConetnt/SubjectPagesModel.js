@@ -12,7 +12,7 @@ const bookPagesSchema = new mongoose.Schema({
         ref : "Subject",
         required : true
     },
-    SubjectPageContent: [{ type: mongoose.Schema.Types.ObjectId, ref:"SubjectPageContent"}],
+    SubjectPageContent: { type: mongoose.Schema.Types.ObjectId, ref:"SubjectPageContent"},
     title:{type:String,required:true},
     imageUrl:{type:String,required:true},
 },{timestamps:true})

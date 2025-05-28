@@ -4,9 +4,9 @@ const lessonSchema = new mongoose.Schema({
     UnitId: { type: mongoose.Schema.Types.ObjectId, ref: "Unit", required: true },
     ClassId: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
     dayId: { type: mongoose.Schema.Types.ObjectId, ref: "Day", required: true },
-    lessonAvatar: { type: String, required: true },
-    lessonTitle: { type: String, required: true },
-    duration: { type: Number, required: true },
+    contentAvtar: { type: String, required: true },
+    title: { type: String, required: true },
+    duration: { type: String, required: true },
     objectives: [
         {
             objectiveTitle: { type: String, required: true },
@@ -17,7 +17,18 @@ const lessonSchema = new mongoose.Schema({
         title: { type: String },
         link: { type: String },
         poster: { type: String },
-    }]
+    }],
+
+    creationType: {
+        type: String,
+        enum: ['manual', 'book'],
+        required: true
+    },
+    bookPageId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'BookPageContent',
+        required: function () { return this.creationType === 'book'; }
+    },
 }, { timestamps: true })
 
 

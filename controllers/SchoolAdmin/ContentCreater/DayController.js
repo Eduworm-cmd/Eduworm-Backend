@@ -1,130 +1,224 @@
+const { default: mongoose } = require('mongoose');
 const DayModel = require('../../../models/SchoolAdmin/ContentCreateModels/DayModel');
 const UnitModel = require('../../../models/SchoolAdmin/ContentCreateModels/UnitModel');
 const authSchoolBranchModel = require('../../../models/SuperAdmin/authSchoolBranchModel');
 const SchoolAdmin = require('../../../models/SuperAdmin/authSchoolBranchModel');
 const classModel = require('../../../models/SuperAdmin/classModel');
 
-
-const getDayByUnitId = async (req, res)=>{
-    const {unitId} = req.params;
-    try {
-        const day = await DayModel.find({unitId}).select("globalDayNumber");
-        if(!day) return res.status(404).json({success:false,message:"Day not found"});
-        res.status(200).json({success:true,data:day});
-    } catch (error) {
-        res.status(500).json({success:false,message:error.message});
+// Helper function to get visible days for a unit - Complete weeks only
+async function getVisibleDaysForUnit(unit, totalVisibleDays) {
+    const unitStartDay = unit.startDayNumber;
+    const unitEndDay = unit.startDayNumber + unit.totalDays - 1;
+    
+    // Show complete weeks up to totalVisibleDays
+    const maxVisibleDay = Math.min(totalVisibleDays, unitEndDay);
+    
+    if (maxVisibleDay < unitStartDay) {
+        return []; // No days visible yet
     }
+    
+    // Get all days from unit start up to the maximum visible day (complete weeks)
+    const visibleDays = await DayModel.find({ 
+        unitId: unit._id,
+        globalDayNumber: { 
+            $gte: unitStartDay,
+            $lte: maxVisibleDay 
+        }
+    }).sort({ globalDayNumber: 1 });
+    
+    return visibleDays;
 }
 
+// Helper function to calculate calendar days between two dates (including weekends)
+function calculateCalendarDaysBetween(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Reset time to avoid timezone issues
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    
+    const timeDifference = end.getTime() - start.getTime();
+    const daysDifference = Math.floor(timeDifference / (1000 * 3600 * 24));
+    
+    return Math.max(0, daysDifference);
+}
 
-const updateDayVisibility = async () => {
+// Helper function to update day visibility for complete weeks
+async function updateCompleteWeekVisibility(totalVisibleDays) {
+    // Mark complete weeks as visible
+    await DayModel.updateMany(
+        { globalDayNumber: { $lte: totalVisibleDays } },
+        { isVisible: true }
+    );
+    
+    // Mark future days as not visible
+    await DayModel.updateMany(
+        { globalDayNumber: { $gt: totalVisibleDays } },
+        { isVisible: false }
+    );
+}
+
+const getDayByUnitId = async (req, res) => {
     try {
-        // Get all active branches
-        const branches = await authSchoolBranchModel.find({
-            isActive: true,
-            'contentStartData.contentStarted': true,
-            'contentStartData.contentStartDate': { $ne: null }
+        const { unitId } = req.params;
+
+        if (!unitId) {
+            return res.status(400).json({
+                success: false,
+                message: "Unit ID is required!"
+            });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(unitId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid Unit ID!"
+            });
+        }
+
+        // Get unit details
+        const unit = await UnitModel.findById(unitId);
+        if (!unit) {
+            return res.status(404).json({
+                success: false,
+                message: "Unit not found"
+            });
+        }
+
+        // Get class details to check content start status
+        const isContentStarted = true;
+        const cstartDate = new Date("2025-05-2"); // Match the main system start date
+        
+        // Check if content has started
+        if (!isContentStarted || !cstartDate) {
+            return res.status(400).json({
+                success: false,
+                message: "Content not started or start date not set"
+            });
+        }
+
+        const startDate = new Date(cstartDate);
+        const currentDate = new Date();
+        
+        // Calculate actual days passed from May 25th (including weekends)
+        const daysPassed = calculateCalendarDaysBetween(startDate, currentDate);
+        
+        // Determine which weeks to show completely
+        const currentWeekNumber = Math.floor(daysPassed / 5) + 1; // Which week we're currently in
+        const weeksToShow = daysPassed > 0 ? currentWeekNumber : 0; // Show complete weeks up to current week
+        const totalVisibleDays = weeksToShow * 5; // Always show complete weeks (5 days each)
+        const completedWeeks = Math.floor(daysPassed / 5); // Fully completed weeks
+        const daysInCurrentWeek = daysPassed % 5; // Days completed in current week
+
+        if (daysPassed <= 0) {
+            return res.status(200).json({
+                success: false,
+                message: "Content will start from May 25th",
+                data: [],
+                unitInfo: {
+                    name: unit.name,
+                    totalDays: unit.totalDays,
+                    startDayNumber: unit.startDayNumber,
+                    isCompleted: false
+                },
+                currentDay: 0,
+                weeksToShow: 0,
+                completedWeeks: 0
+            });
+        }
+
+        // Get ALL visible days for this unit based on complete weeks
+        const unitStartDay = unit.startDayNumber;
+        const unitEndDay = unit.startDayNumber + unit.totalDays - 1;
+        const maxVisibleDay = Math.min(totalVisibleDays, unitEndDay);
+
+        // Only show days if the unit has started and complete weeks are available
+        let days = [];
+        if (totalVisibleDays >= unitStartDay) {
+            days = await DayModel.find({
+                unitId,
+                globalDayNumber: {
+                    $gte: unitStartDay,
+                    $lte: maxVisibleDay
+                }
+            }).select("globalDayNumber week calendarDate isVisible lessons")
+                .populate('lessons')
+                .sort({ globalDayNumber: 1 });
+        }
+
+        if (!days || days.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No complete weeks available for this unit yet",
+                data: [],
+                unitInfo: {
+                    name: unit.name,
+                    totalDays: unit.totalDays,
+                    startDayNumber: unit.startDayNumber,
+                    isCompleted: daysPassed > unitEndDay
+                },
+                currentDay: daysPassed,
+                weeksToShow: weeksToShow,
+                completedWeeks: completedWeeks,
+                daysInCurrentWeek: daysInCurrentWeek,
+                totalVisibleDays: totalVisibleDays
+            });
+        }
+
+        // Group days by week for better organization
+        const daysByWeek = {};
+        days.forEach(day => {
+            if (!daysByWeek[day.week]) {
+                daysByWeek[day.week] = [];
+            }
+            daysByWeek[day.week].push(day);
         });
 
-        for (const branch of branches) {
-            // Update visibility for each branch
-            await calculateDayVisibility(branch._id);
-        }
+        // Calculate unit-specific progress
+        const unitProgress = {
+            daysShown: days.length,
+            weeksShownInUnit: Math.ceil(days.length / 5),
+            isCurrentUnit: daysPassed >= unitStartDay && daysPassed < unitEndDay,
+            isCompleted: totalVisibleDays >= unitEndDay,
+            progressPercentage: Math.round((days.length / unit.totalDays) * 100)
+        };
 
-        console.log(`Updated day visibility for ${branches.length} branches`);
-    } catch (error) {
-        console.error("Error in scheduled visibility update:", error);
-    }
-};
+        // Update visibility in database
+        await updateCompleteWeekVisibility(totalVisibleDays);
 
-
-/**
- * Calculates which days should be visible based on the branch's content start date
- */
-const calculateDayVisibility = async (branchId) => {
-    try {
-        // Get branch details
-        const branch = await SchoolAdmin.findById(branchId);
-        if (!branch || !branch.contentStartData || !branch.contentStartData.contentStarted) {
-            return false;
-        }
-
-        const startDate = new Date(branch.contentStartData.contentStartDate);
-        if (!startDate) return false;
-
-        // Get all classes for this branch
-        const classes = await classModel.find({ branch: branchId, isActive: true });
-
-        for (const classObj of classes) {
-            // Get all units for this class
-            const units = await UnitModel.find({ classId: classObj._id }).sort({ startDayNumber: 1 });
-
-            let currentDate = new Date(startDate);
-            let currentDayNumber = 1;
-
-            for (const unit of units) {
-                // Get days for this unit
-                const days = await DayModel.find({ unitId: unit._id }).sort({ globalDayNumber: 1 });
-
-                // If no days exist, create them
-                if (days.length === 0) {
-                    const totalDays = unit.totalDays;
-                    const newDays = [];
-
-                    for (let i = 0; i < totalDays; i++) {
-                        // Skip weekends (Saturday and Sunday)
-                        while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                            currentDate = new Date(currentDate);
-                            currentDate.setDate(currentDate.getDate() + 1);
-                        }
-
-                        const weekNumber = Math.ceil(i / 5) + (unit.startDayNumber ? Math.floor(unit.startDayNumber / 5) : 0);
-
-                        newDays.push({
-                            unitId: unit._id,
-                            globalDayNumber: currentDayNumber,
-                            week: weekNumber,
-                            calendarDate: new Date(currentDate),
-                            isVisible: new Date() >= currentDate
-                        });
-
-                        currentDayNumber++;
-                        currentDate = new Date(currentDate);
-                        currentDate.setDate(currentDate.getDate() + 1);
-                    }
-
-                    if (newDays.length > 0) {
-                        await DayModel.insertMany(newDays);
-                    }
-                } else {
-                    // Update existing days
-                    for (const day of days) {
-                        // Skip weekends (Saturday and Sunday)
-                        while (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                            currentDate = new Date(currentDate);
-                            currentDate.setDate(currentDate.getDate() + 1);
-                        }
-
-                        day.calendarDate = new Date(currentDate);
-                        day.isVisible = new Date() >= currentDate;
-                        await day.save();
-
-                        currentDate = new Date(currentDate);
-                        currentDate.setDate(currentDate.getDate() + 1);
-                    }
-                }
+        res.status(200).json({
+            success: true,
+            data: days,
+            daysByWeek: daysByWeek,
+            totalVisibleDays: days.length,
+            unitInfo: {
+                name: unit.name,
+                totalDays: unit.totalDays,
+                startDayNumber: unit.startDayNumber,
+                endDayNumber: unitEndDay,
+                isCompleted: totalVisibleDays >= unitEndDay
+            },
+            unitProgress: unitProgress,
+            systemInfo: {
+                currentDay: daysPassed,
+                weeksToShow: weeksToShow,
+                completedWeeks: completedWeeks,
+                daysInCurrentWeek: daysInCurrentWeek,
+                totalVisibleDays: totalVisibleDays,
+                startDate: "2025-05-25",
+                currentDate: currentDate.toISOString().split('T')[0]
             }
-        }
+        });
 
-        return true;
     } catch (error) {
-        console.error("Error calculating day visibility:", error);
-        return false;
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 
 module.exports = {
     getDayByUnitId,
-    calculateDayVisibility,
-    updateDayVisibility
-}
+};

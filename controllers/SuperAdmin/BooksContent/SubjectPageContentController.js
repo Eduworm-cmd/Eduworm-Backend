@@ -11,7 +11,6 @@ const createSubjectPageContent = async (req, res) => {
             classId,
             SubjectId,
             SubjectPageId,
-            shcedule,
             contentAvtar,
             title,
             duration,
@@ -169,7 +168,6 @@ const createSubjectPageContent = async (req, res) => {
             classId,
             SubjectId,
             SubjectPageId,
-            shcedule: shcedule || "",
             contentAvtar: contentAvtarUrl,
             title,
             duration,
@@ -180,7 +178,7 @@ const createSubjectPageContent = async (req, res) => {
         await newSubjectPageContent.save();
 
         // Add reference to subject page
-        existSubjectPage.SubjectPageContent.push(newSubjectPageContent._id);
+        existSubjectPage.SubjectPageContent = newSubjectPageContent._id;
         await existSubjectPage.save();
 
         return res.status(200).json({
@@ -199,20 +197,20 @@ const createSubjectPageContent = async (req, res) => {
     }
 };
 
-const getContentByPageId = async (req,res) =>{
-    const {pageId} = req.params;
-    try{
-        if(!pageId) {
-            return res.status(400).json({ success: false,message: "Page ID is required"});
+const getContentByPageId = async (req, res) => {
+    const { pageId } = req.params;
+    try {
+        if (!pageId) {
+            return res.status(400).json({ success: false, message: "Page ID is required" });
         }
 
         if (!mongoose.Types.ObjectId.isValid(pageId)) {
             return res.status(400).json({ success: false, message: "Invalid Page ID" });
         }
 
-        const content = await subjectPageContentModel.find({SubjectPageId:pageId});
+        const content = await subjectPageContentModel.find({ SubjectPageId: pageId });
         console.log("Content:", content);
-        
+
         if (!content) {
             return res.status(404).json({ success: false, message: "Content not found for this Page ID" });
         }
@@ -223,7 +221,7 @@ const getContentByPageId = async (req,res) =>{
             data: content
         });
 
-    }catch (error) {
+    } catch (error) {
         console.error("Error in getContentByPageId:", error);
         return res.status(500).json({
             success: false,

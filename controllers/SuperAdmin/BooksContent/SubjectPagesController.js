@@ -111,6 +111,27 @@ const getSubjectPagesBySubjectId = async (req, res) => {
     }
 }
 
+const dropdownSubjectsPages = async (req, res) => {
+    const { subjectId } = req.params;
+
+    try {
+        if (!subjectId) {
+            return res.status(400).json({ success: false, message: "subjectId is required" });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(subjectId)) {
+            return res.status(400).json({ success: false, message: "Invalid subjectId format" });
+        }
+
+        const subjectsPages = await SubjectPagesModel.find({ SubjectId: subjectId }).select("_id title");
+
+        return res.status(200).json({ success: true, data: subjectsPages });
+    } catch (error) {
+        console.error("Error", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", details: error.message });
+    }
+};
+
 const getAllPagesBySubjectId = async (req, res) => {
     try {
         const { subjectId } = req.params;
@@ -157,4 +178,5 @@ module.exports = {
     createSubjectPages,
     getSubjectPagesBySubjectId,
     getAllPagesBySubjectId,
+    dropdownSubjectsPages,
 };

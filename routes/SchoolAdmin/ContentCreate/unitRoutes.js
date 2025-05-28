@@ -5,7 +5,8 @@ const unitController = require('../../../controllers/SchoolAdmin/ContentCreater/
 
 
 router.post('/createUnit', unitController.createUnit);
-router.get('/UnitByClass/:classId', unitController.GetUnitsByClassId);
+router.get('/UnitByClass/:classId', unitController.GetVisibleUnitsByClassId);
+router.get('/dropdown/:classId', unitController.unitByClassId);
 
 
 

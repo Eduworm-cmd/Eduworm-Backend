@@ -21,9 +21,6 @@ const subjectPageContentSchema = new mongoose.Schema({
     contentAvtar: { type: String, required: true },
     title: { type: String, required: true, unique: true },
     duration: { type: String, required: true },
-    shcedule: {
-        type: String,
-    },
     objectives: [
         {
             objectiveTitle: { type: String, required: true },
@@ -34,8 +31,13 @@ const subjectPageContentSchema = new mongoose.Schema({
         title: { type: String, required: true },
         link: { type: String, required: true },
         poster: { type: String, required: true },
-    }]
-
+    }],
+    shcedule: [{
+        unit: { type: String },
+        week: { type: String },
+        day: { type: String },
+        day_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Day' }
+    }],
 
 }, { timestamps: true })
 

@@ -9,7 +9,6 @@
             type: Date,
             default: null
         },
-        // Flag to check if this day is visible based on the branch's content start date
         isVisible: {
             type: Boolean,
             default: false

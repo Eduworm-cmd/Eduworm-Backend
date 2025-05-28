@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// ✅ Updated contentStartSchema with both flags and date
 const contentStartSchema = new mongoose.Schema({
   contentStarted: {
     type: Boolean,
@@ -103,7 +102,6 @@ const SchoolAdminSchema = new mongoose.Schema({
     default: true
   },
 
-  // ✅ Updated structure with contentStarted + contentStartDate
   contentStartData: contentStartSchema
 
 }, {
