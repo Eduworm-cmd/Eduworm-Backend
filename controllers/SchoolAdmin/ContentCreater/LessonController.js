@@ -22,8 +22,11 @@ const LessonCreate = async (req, res) => {
             interactiveActivity,
             creationType,
             bookPageId,
+            SubjectId
         } = req.body;
 
+        console.log("Creating lesson with data:", SubjectId);
+        
         if (!['manual', 'book'].includes(creationType)) {
             return res.status(400).json({ error: "Invalid creation type. Must be 'manual' or 'book'" });
         }
@@ -121,6 +124,7 @@ const LessonCreate = async (req, res) => {
                 dayId,
                 ClassId,
                 UnitId,
+                SubjectId,
                 title,
                 contentAvtar: lessonAvatarUrl,
                 duration,
@@ -175,6 +179,7 @@ const LessonCreate = async (req, res) => {
                 dayId,
                 ClassId,
                 UnitId,
+                SubjectId: bookPageContentExists.SubjectId,
                 title: bookPageContentExists.title,
                 contentAvtar: bookPageContentExists.contentAvtar,
                 duration: bookPageContentExists.duration,
@@ -260,7 +265,7 @@ const getLessonById = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(lessonId)) {
             return res.status(400).json({ error: "Invalid Lesson ID" });
         }
-        const lessons = await LessonModel.findById(lessonId);
+        const lessons = await LessonModel.findById(lessonId).populate('SubjectId' ,'title');
         if (!lessons) {
             return res.status(404).json({ error: "Lessons not found" });
         }
