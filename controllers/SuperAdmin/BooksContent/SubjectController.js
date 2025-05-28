@@ -62,7 +62,7 @@ const createSubject = async (req, res) => {
 };
 
 
-const getSubjectsByClassId = async (req, res) => {
+const dropdowmSubjectsByClassId = async (req, res) => {
     const { classId } = req.params;
 
     try {
@@ -83,6 +83,24 @@ const getSubjectsByClassId = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal Server Error", details: error.message });
     }
 };
+
+const getSubjectsByClassId = async (req, res) => {
+    const { classId } = req.params;
+
+    try {
+        const existClass = await classModel.findById(classId);
+        if (!existClass) {
+            return res.status(404).json({ success: false, message: "Class not found" });
+        }
+        const subjects = await subjectModel.find({ classId })
+        .populate('classId', 'className');
+
+        return res.status(200).json({ success: true, data: subjects });
+    } catch (error) {
+        console.error("Error", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", details: error.message });
+    }
+}
 
 
 const deleteSubjectById = async (req, res) => {
@@ -145,4 +163,4 @@ const deleteSubjectById = async (req, res) => {
     }
 };
 
-module.exports = { createSubject, getSubjectsByClassId, deleteSubjectById };
+module.exports = { createSubject, getSubjectsByClassId, deleteSubjectById,dropdowmSubjectsByClassId };
