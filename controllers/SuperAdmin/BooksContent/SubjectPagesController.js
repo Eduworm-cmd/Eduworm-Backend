@@ -3,6 +3,7 @@ const subjectModel = require("../../../models/SuperAdmin/BookConetnt/subjectMode
 const cloudinary = require("../../../config/cloudinary");
 const classModel = require("../../../models/SuperAdmin/classModel");
 const { default: mongoose } = require("mongoose");
+const subjectPageContent = require("../../../models/SuperAdmin/BookConetnt/subjectPageContent");
 
 
 const createSubjectPages = async (req, res) => {
@@ -156,8 +157,44 @@ const getAllPagesBySubjectId = async (req, res) => {
     }
 }
 
+
+const deleteSubjectPageById = async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, message: "Invalid Subject Page ID" });
+    }
+
+    try {
+        // 1. Find the SubjectPage
+        const subjectPage = await SubjectPagesModel.findById(id);
+
+        if (!subjectPage) {
+            return res.status(404).json({ success: false, message: "Subject Page not found" });
+        }
+
+        // 2. Remove reference from Subject model
+        await subjectModel.updateMany(
+            { SubjectPage: id },
+            { $pull: { SubjectPage: id } }
+        );
+
+        // 3. Delete all SubjectPageContent with this SubjectPageId
+        await subjectPageContent.deleteMany({ SubjectPageId: id });
+
+        // 4. Delete the SubjectPage
+        await subjectPage.deleteOne();
+
+        return res.status(200).json({ success: true, message: "Subject Page and related content deleted successfully" });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     createSubjectPages,
     getSubjectPagesBySubjectId,
     getAllPagesBySubjectId,
+    deleteSubjectPageById
 };
