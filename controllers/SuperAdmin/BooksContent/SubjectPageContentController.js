@@ -18,7 +18,7 @@ const createSubjectPageContent = async (req, res) => {
             interactiveActivity
         } = req.body;
 
-        // Basic validation
+
         if (!objectives || !interactiveActivity) {
             return res.status(400).json({
                 success: false,

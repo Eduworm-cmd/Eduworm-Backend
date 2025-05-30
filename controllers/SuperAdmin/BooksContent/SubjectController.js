@@ -3,6 +3,8 @@ const cloudinary = require("../../../config/cloudinary");
 
 const subjectModel = require("../../../models/SuperAdmin/BookConetnt/subjectModel");
 const classModel = require("../../../models/SuperAdmin/classModel");
+const SubjectPagesModel = require("../../../models/SuperAdmin/BookConetnt/SubjectPagesModel");
+const subjectPageContent = require("../../../models/SuperAdmin/BookConetnt/subjectPageContent");
 
 const createSubject = async (req, res) => {
     try {
@@ -105,62 +107,93 @@ const getSubjectsByClassId = async (req, res) => {
 
 const deleteSubjectById = async (req, res) => {
     const { subjectId } = req.params;
+
     try {
-        // Convert subjectId to ObjectId for consistent comparison
         const subjectObjectId = new mongoose.Types.ObjectId(subjectId);
 
-        // Find the subject and get classId reference
+        // 1️⃣ Verify subject exists
         const subject = await subjectModel.findById(subjectObjectId);
         if (!subject) {
-            return res.status(404).json({ success: false, message: "Subject not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Subject not found",
+            });
         }
 
-        // Verify the class exists
+        // 2️⃣ Verify class exists
         const classExists = await classModel.findById(subject.classId);
         if (!classExists) {
-            return res.status(404).json({ success: false, message: "Associated class not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Associated class not found",
+            });
         }
 
-        // Start a session for transaction
+        // 3️⃣ Start transaction
         const session = await mongoose.startSession();
         session.startTransaction();
 
         try {
-            // Delete the subject
+            // 4️⃣ Find all SubjectPages linked to this Subject
+            const subjectPages = await SubjectPagesModel.find(
+                { SubjectId: subjectObjectId },
+                null,
+                { session }
+            );
+
+            // 5️⃣ Delete all SubjectPageContent for each SubjectPage
+            for (const page of subjectPages) {
+                await subjectPageContent.deleteMany(
+                    { SubjectPageId: page._id },
+                    { session }
+                );
+            }
+
+            // 6️⃣ Delete all SubjectPages
+            await SubjectPagesModel.deleteMany(
+                { SubjectId: subjectObjectId },
+                { session }
+            );
+
+            // 7️⃣ Delete the Subject
             await subjectModel.findByIdAndDelete(subjectObjectId, { session });
 
-            // Remove subject reference from class
-            const updatedClass = await classModel.findByIdAndUpdate(
+            // 8️⃣ Remove subject reference from Class
+            await classModel.findByIdAndUpdate(
                 subject.classId,
                 { $pull: { subjects: subjectObjectId } },
                 { new: true, session }
             );
 
-            // Verify the subject was removed from class
-            if (updatedClass.subjects.includes(subjectObjectId)) {
-                throw new Error("Subject reference not removed from class");
-            }
-
+            // 9️⃣ Commit transaction
             await session.commitTransaction();
             session.endSession();
 
             return res.status(200).json({
                 success: true,
-                message: "Subject deleted successfully and removed from class"
+                message: "Subject and related data deleted successfully",
             });
         } catch (transactionError) {
             await session.abortTransaction();
             session.endSession();
-            throw transactionError;
+            console.error("Transaction error:", transactionError);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to delete subject",
+                details: transactionError.message,
+            });
         }
     } catch (error) {
         console.error("Error deleting subject:", error);
         return res.status(500).json({
             success: false,
             message: "Internal Server Error",
-            details: error.message
+            details: error.message,
         });
     }
 };
+
+  
+
 
 module.exports = { createSubject, getSubjectsByClassId, deleteSubjectById,dropdowmSubjectsByClassId };
