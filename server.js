@@ -7,7 +7,7 @@ const authSchoolBranchRoutes = require("./routes/SuperAdmin/authSchoolBranchRout
 const superAdminAuthRoutes = require("./routes/authRoutes_SuperAdmin");
 const gradeRoutes = require("./routes/SuperAdmin/gradeRoutes");
 const levelRoutes = require("./routes/levelRoutes");
-const contentRoutes = require("./routes/contentRoutes");
+
 const playlistRoutes = require("./routes/playListRoutes");
 // Super Admin
 const SA_StaffRoutes = require('./routes/SuperAdmin/staffRoutes');
@@ -46,7 +46,6 @@ app.use("/api/unit", unitRoutes);
 app.use("/api/Day", DayRoutes);
 app.use("/api/Lesson", LessonRoutes);
 app.use("/api/level", levelRoutes);
-app.use("/api/content", contentRoutes);
 app.use("/api", playlistRoutes);
 
 
