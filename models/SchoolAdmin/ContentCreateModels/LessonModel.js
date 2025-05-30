@@ -4,6 +4,7 @@ const lessonSchema = new mongoose.Schema({
     UnitId: { type: mongoose.Schema.Types.ObjectId, ref: "Unit", required: true },
     ClassId: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
     dayId: { type: mongoose.Schema.Types.ObjectId, ref: "Day", required: true },
+    SubjectId: { type: mongoose.Schema.Types.ObjectId, ref: "Subject", required: true },
     contentAvtar: { type: String, required: true },
     title: { type: String, required: true },
     duration: { type: String, required: true },

@@ -22,6 +22,7 @@ const LessonCreate = async (req, res) => {
             interactiveActivity,
             creationType,
             bookPageId,
+            SubjectId
         } = req.body;
 
         if (!['manual', 'book'].includes(creationType)) {
@@ -53,7 +54,6 @@ const LessonCreate = async (req, res) => {
                 return res.status(400).json({ error: "Missing required fields for manual lesson" });
             }
 
-            // Upload lesson avatar
             if (lessonAvatar.length > 50) {
                 try {
                     const uploadSource = lessonAvatar.startsWith("data:image/")
@@ -73,7 +73,6 @@ const LessonCreate = async (req, res) => {
                 return res.status(400).json({ error: "Invalid or missing lesson avatar" });
             }
 
-            // Format objectives
             if (!Array.isArray(objectives) || objectives.length % 2 !== 0) {
                 return res.status(400).json({ error: "Objectives must be a flat array [title, value, ...]" });
             }
@@ -85,42 +84,50 @@ const LessonCreate = async (req, res) => {
                 });
             }
 
-            // Format interactive activities
             if (interactiveActivity && !Array.isArray(interactiveActivity)) {
                 return res.status(400).json({ error: "Interactive activity must be an array" });
             }
+            
+            formattedInteractiveActivity = await Promise.all(
+                (interactiveActivity || [])
+                    .filter((activity) =>
+                        activity.title?.trim() || activity.link?.trim() || (activity.poster && activity.poster.length > 50)
+                    )
+                    .map(async (activity) => {
+                        let posterUrl = null;
 
-            formattedInteractiveActivity = await Promise.all((interactiveActivity || []).map(async (activity) => {
-                let posterUrl = null;
+                        if (activity.poster && activity.poster.length > 50) {
+                            try {
+                                const uploadSource = activity.poster.startsWith("data:image/")
+                                    ? activity.poster
+                                    : activity.poster.startsWith("http")
+                                        ? activity.poster
+                                        : `data:image/png;base64,${activity.poster}`;
 
-                if (activity.poster && activity.poster.length > 50) {
-                    try {
-                        const uploadSource = activity.poster.startsWith("data:image/")
-                            ? activity.poster
-                            : activity.poster.startsWith("http")
-                                ? activity.poster
-                                : `data:image/png;base64,${activity.poster}`;
+                                const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
+                                    folder: "Activity Posters",
+                                });
 
-                        const uploadResponse = await cloudinary.uploader.upload(uploadSource, {
-                            folder: "Activity Posters",
-                        });
-                        posterUrl = uploadResponse.secure_url;
-                    } catch (uploadError) {
-                        console.error("Poster upload failed:", uploadError.message);
-                    }
-                }
+                                posterUrl = uploadResponse.secure_url;
+                            } catch (uploadError) {
+                                console.error("Poster upload failed:", uploadError.message);
+                            }
+                        }
 
-                return {
-                    title: activity.title || '',
-                    link: activity.link || '',
-                    poster: posterUrl
-                };
-            }));
+                        return {
+                            title: activity.title,
+                            link: activity.link,
+                            poster: posterUrl,
+                        };
+                    })
+            );
+
 
             newLesson = new LessonModel({
                 dayId,
                 ClassId,
                 UnitId,
+                SubjectId,
                 title,
                 contentAvtar: lessonAvatarUrl,
                 duration,
@@ -155,7 +162,6 @@ const LessonCreate = async (req, res) => {
                 return res.status(404).json({ error: "Day not found" });
             }
 
-            // Push schedule
             await bookPageContent.findByIdAndUpdate(
                 validBookPageId,
                 {
@@ -175,6 +181,7 @@ const LessonCreate = async (req, res) => {
                 dayId,
                 ClassId,
                 UnitId,
+                SubjectId: bookPageContentExists.SubjectId,
                 title: bookPageContentExists.title,
                 contentAvtar: bookPageContentExists.contentAvtar,
                 duration: bookPageContentExists.duration,
@@ -260,7 +267,7 @@ const getLessonById = async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(lessonId)) {
             return res.status(400).json({ error: "Invalid Lesson ID" });
         }
-        const lessons = await LessonModel.findById(lessonId);
+        const lessons = await LessonModel.findById(lessonId).populate('SubjectId', 'title');
         if (!lessons) {
             return res.status(404).json({ error: "Lessons not found" });
         }
