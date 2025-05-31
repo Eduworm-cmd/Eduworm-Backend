@@ -27,10 +27,17 @@ dotenv.config();
 
 const app = express();
 app.use(morgan('dev'));
+// app.use(cors({
+//     origin:["http://localhost:5173","eduwrom-frontend.onrender.com","*"]
+//     credentials: true
+// }));
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+        callback(null, origin || '*');
+    },
     credentials: true
 }));
+
 
 
 // Set JSON limits before any routes
@@ -51,18 +58,18 @@ app.use("/api", playlistRoutes);
 
 
 // Super Admin API
-app.use('/api/school',schoolRoutes)
-app.use('/api/SA_Staff',SA_StaffRoutes);
-app.use('/api/academicYear',academicYearRoutes);
-app.use('/api/subject',subjectRoutes);
-app.use("/api/class",classRoutes);
-app.use("/api/subjectPage",SubjectPageRoutes);
-app.use("/api/subject_PageContent",SubjectPageContentRoutes);
-app.use("/api/superStudent",studentsRoutes);
+app.use('/api/school', schoolRoutes)
+app.use('/api/SA_Staff', SA_StaffRoutes);
+app.use('/api/academicYear', academicYearRoutes);
+app.use('/api/subject', subjectRoutes);
+app.use("/api/class", classRoutes);
+app.use("/api/subjectPage", SubjectPageRoutes);
+app.use("/api/subject_PageContent", SubjectPageContentRoutes);
+app.use("/api/superStudent", studentsRoutes);
 
 
 // School Admin API
-app.use("/api/staff",staffRoutes);
+app.use("/api/staff", staffRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
