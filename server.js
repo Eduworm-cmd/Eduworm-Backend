@@ -55,6 +55,9 @@ app.use("/api/Lesson", LessonRoutes);
 app.use("/api/level", levelRoutes);
 app.use("/api", playlistRoutes);
 
+app.get('/', (req, res) => {
+    res.json({ status: 'OK', message: 'Server is live and healthy' });
+});
 
 
 // Super Admin API
